@@ -201,7 +201,7 @@
       <div style="overflow-x:auto">
       <table>
         <thead><tr>
-          <th>#</th><th>Date</th><th>Site Name</th><th>Elevator Model</th><th>Elevator ID</th>
+          <th>#</th><th>Date</th><th>Site Name</th><th>Elevator Company</th><th>Elevator Model</th>
           <th>Floors</th><th>Feasibility</th><th>Status</th><th>Actions</th>
         </tr></thead>
         <tbody id="tbody"></tbody>
@@ -323,8 +323,8 @@ function renderTable(){
       <td>${start+i+1}</td>
       <td>${s.date}</td>
       <td>${s.site}</td>
+      <td>${s.oem}</td>
       <td>${s.model}</td>
-      <td>${s.elevatorId}</td>
       <td>${s.floors}</td>
       <td><span class="pill ${VERDICT_CLASS[s.verdict]}">${VERDICT_LABEL[s.verdict]}</span></td>
       <td><span class="pill status">Completed</span></td>
