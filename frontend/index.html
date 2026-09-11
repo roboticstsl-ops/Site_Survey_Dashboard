@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Elevator RF Survey Manager</title>
+<style>
+  :root{
+    --bg:#f3f5f9; --surface:#ffffff; --border:#e3e7ee; --text:#1a2333; --muted:#667085;
+    --accent:#2563eb; --accent-dark:#1d4ed8; --accent-bg:#e8effe;
+    --good-bg:#e7f8ee; --good-fg:#0f8a3d;
+    --warn-bg:#fdf3d8; --warn-fg:#a06a00;
+    --bad-bg:#fde9e9;  --bad-fg:#c62828;
+    --nav-bg:#111827; --nav-fg:#c7cdd9; --nav-fg-active:#ffffff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-variant-numeric:tabular-nums;}
+  a{color:var(--accent)}
+  .app{display:grid;grid-template-columns:220px 1fr;grid-template-rows:60px 1fr;min-height:100vh;
+    grid-template-areas:"nav header" "nav main";}
+  header{grid-area:header;background:var(--surface);border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:16px;padding:0 24px;position:sticky;top:0;z-index:5;}
+  header h1{font-size:17px;margin:0;display:flex;align-items:center;gap:10px;white-space:nowrap;}
+  header h1 .logo{width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:15px;}
+  .search-box{flex:1;max-width:460px;position:relative;margin-left:16px;}
+  .search-box input{width:100%;padding:9px 14px 9px 36px;border:1px solid var(--border);
+    border-radius:8px;background:var(--bg);font-size:13px;color:var(--text);}
+  .search-box svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);opacity:.5}
+  .user-chip{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;}
+  .user-chip .avatar{width:30px;height:30px;border-radius:50%;background:var(--accent-bg);
+    color:var(--accent-dark);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+
+  nav{grid-area:nav;background:var(--nav-bg);padding:16px 10px;display:flex;flex-direction:column;gap:2px;}
+  nav .brand{color:#fff;font-weight:700;font-size:14px;padding:6px 10px 16px;opacity:0;height:0;}
+  nav a{display:flex;align-items:center;gap:10px;color:var(--nav-fg);text-decoration:none;
+    font-size:13.5px;padding:10px 12px;border-radius:8px;}
+  nav a svg{flex:none;opacity:.85}
+  nav a:hover{background:#1c2333;color:var(--nav-fg-active)}
+  nav a.active{background:var(--accent);color:#fff}
+
+  main{grid-area:main;padding:24px 28px 48px;max-width:1280px;}
+  .page-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;gap:16px;flex-wrap:wrap}
+  .page-head h2{margin:0 0 4px;font-size:24px}
+  .page-head p{margin:0;color:var(--muted);font-size:13.5px}
+  button.primary{background:var(--accent);color:#fff;border:none;border-radius:8px;
+    padding:10px 16px;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;}
+  button.primary:hover{background:var(--accent-dark)}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:16px;display:flex;align-items:center;gap:12px;}
+  .stat-card .icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none;}
+  .stat-card .n{font-size:22px;font-weight:700;line-height:1.1}
+  .stat-card .l{font-size:12.5px;color:var(--muted)}
+  .stat-card.total .icon{background:var(--accent-bg);color:var(--accent-dark)}
+  .stat-card.feasible .icon{background:var(--good-bg);color:var(--good-fg)}
+  .stat-card.attention .icon{background:var(--warn-bg);color:var(--warn-fg)}
+  .stat-card.notfeasible .icon{background:var(--bad-bg);color:var(--bad-fg)}
+
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:20px;overflow:hidden}
+  .filter-bar{display:flex;gap:10px;padding:14px 16px;flex-wrap:wrap;border-bottom:1px solid var(--border)}
+  .filter-bar input[type=text],.filter-bar select,.filter-bar input[type=date]{
+    border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;background:var(--bg);color:var(--text);}
+  .filter-bar .grow{flex:1;min-width:200px;position:relative}
+  .filter-bar .grow svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);opacity:.5}
+  .filter-bar .grow input{width:100%;padding-left:30px}
+  .filter-bar .clear{margin-left:auto;background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;font-weight:600}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{text-align:left;color:var(--muted);font-weight:600;font-size:11.5px;text-transform:uppercase;
+    letter-spacing:.03em;padding:10px 14px;border-bottom:1px solid var(--border)}
+  tbody td{padding:12px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr{cursor:pointer}
+  tbody tr:hover{background:var(--bg)}
+  tbody tr.selected{background:var(--accent-bg)}
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700}
+  .pill.good{background:var(--good-bg);color:var(--good-fg)}
+  .pill.warn{background:var(--warn-bg);color:var(--warn-fg)}
+  .pill.bad{background:var(--bad-bg);color:var(--bad-fg)}
+  .pill.status{background:var(--accent-bg);color:var(--accent-dark)}
+  .row-actions{display:flex;gap:10px;color:var(--muted)}
+  .row-actions button{background:none;border:none;cursor:pointer;color:inherit;padding:2px;display:flex}
+  .row-actions button:hover{color:var(--accent)}
+
+  .table-foot{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;font-size:12.5px;color:var(--muted)}
+  .pager{display:flex;gap:4px;align-items:center}
+  .pager button{width:28px;height:28px;border:1px solid var(--border);background:var(--surface);border-radius:6px;
+    cursor:pointer;font-size:12.5px;color:var(--text)}
+  .pager button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .pager button:disabled{opacity:.4;cursor:default}
+
+  .detail-head{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 20px;flex-wrap:wrap;gap:12px}
+  .detail-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .detail-title h3{margin:0;font-size:19px}
+  .detail-sub{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:6px}
+  .detail-sub span{display:flex;align-items:center;gap:5px}
+  .detail-actions{display:flex;gap:8px;flex:none}
+  button.ghost{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 14px;
+    font-size:13px;font-weight:600;cursor:pointer;color:var(--text);display:flex;align-items:center;gap:6px}
+  button.ghost:hover{border-color:var(--accent);color:var(--accent)}
+
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);padding:0 20px}
+  .tabs button{background:none;border:none;padding:12px 6px;margin-right:20px;font-size:13.5px;color:var(--muted);
+    cursor:pointer;border-bottom:2px solid transparent;font-weight:600}
+  .tabs button.on{color:var(--accent);border-color:var(--accent)}
+  .tab-body{padding:18px 20px 22px}
+
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+  .card{border:1px solid var(--border);border-radius:10px;padding:14px}
+  .card h4{margin:0 0 12px;font-size:13px;display:flex;align-items:center;gap:7px;justify-content:space-between}
+  .card h4 .t{display:flex;align-items:center;gap:7px}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;font-size:13px}
+  .kv dt{color:var(--muted)}
+  .kv dd{margin:0;font-weight:600;text-align:right}
+  .edit-link{font-size:12px;color:var(--accent);cursor:pointer;font-weight:600}
+
+  table.mini{font-size:12.5px}
+  table.mini th,table.mini td{padding:7px 8px}
+
+  .photo-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+  .photo{border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+  .photo .thumb{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;text-align:center}
+  .photo .cap{font-size:11px;padding:5px 6px;color:var(--muted)}
+  .photo.more .thumb{background:var(--bg);color:var(--muted)}
+
+  .doc-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+  .doc-row:last-child{border-bottom:none}
+  .sample-note{font-size:12px;color:var(--muted);background:var(--accent-bg);color:var(--accent-dark);
+    padding:8px 14px;border-radius:8px;margin-bottom:16px;display:inline-block}
+  @media (max-width:900px){.stat-grid{grid-template-columns:1fr 1fr}.grid3{grid-template-columns:1fr}.photo-grid{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav>
+    <a href="#" class="active" data-nav>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 17V9m6 8V5M5 21h14a2 2 0 0 0 2-2V7l-4-4H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2Z"/></svg>
+      Surveys
+    </a>
+    <a href="#" data-nav>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 20 3 17V5l6 3m0 12 6-3m-6 3V8m6 9 6 3V10l-6-3m0 12V5m0 3-6-3"/></svg>
+      Map View
+    </a>
+    <a href="#" data-nav>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5a2 2 0 0 1 2-2h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M14 3v5h5M8 13h8M8 17h5"/></svg>
+      Reports
+    </a>
+    <a href="#" data-nav>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2M17 11a4 4 0 0 0 0-8m3 17v-2a5 5 0 0 0-3-4.6"/></svg>
+      Users
+    </a>
+    <a href="#" data-nav>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 0 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 0 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.55V3a2 2 0 0 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.55 1H21a2 2 0 0 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1Z"/></svg>
+      Settings
+    </a>
+  </nav>
+
+  <header>
+    <h1><span class="logo">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M6 21V7l6-4 6 4v14M9 9h.01M15 9h.01M9 13h.01M15 13h.01M9 17h.01M15 17h.01"/></svg>
+    </span>Elevator RF Survey Manager</h1>
+    <div class="search-box">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" placeholder="Search surveys...">
+    </div>
+    <div class="user-chip"><span class="avatar">AH</span> Ali Hashi</div>
+  </header>
+
+  <main>
+    <div class="sample-note">Sample data below — no live backend connection yet (Phase 2 of BUILD_SPEC.pdf). Layout/behavior only.</div>
+    <div class="page-head">
+      <div><h2>Surveys</h2><p>Manage and view all elevator RF survey reports</p></div>
+      <button class="primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        New Survey
+      </button>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card total"><div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5a2 2 0 0 1 2-2h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/></svg></div><div><div class="n" id="statTotal">0</div><div class="l">Total Surveys</div></div></div>
+      <div class="stat-card feasible"><div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 13 4 4L19 7"/></svg></div><div><div class="n" id="statGood">0</div><div class="l">Feasible Sites</div></div></div>
+      <div class="stat-card attention"><div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg></div><div><div class="n" id="statWarn">0</div><div class="l">Need Attention</div></div></div>
+      <div class="stat-card notfeasible"><div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6m0-6 6 6"/></svg></div><div><div class="n" id="statBad">0</div><div class="l">Not Feasible</div></div></div>
+    </div>
+
+    <div class="panel">
+      <div class="filter-bar">
+        <div class="grow">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="fSearch" placeholder="Search by site name, client, project...">
+        </div>
+        <select id="fStatus"><option value="">All Statuses</option><option>Feasible</option><option>Need Attention</option><option>Not Feasible</option></select>
+        <select id="fClient"><option value="">All Clients</option></select>
+        <input type="date" id="fDate">
+        <button class="clear" id="fClear">Clear</button>
+      </div>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr>
+          <th>#</th><th>Date</th><th>Site Name</th><th>Client</th><th>Elevator ID</th>
+          <th>Floors</th><th>Feasibility</th><th>Status</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      </div>
+      <div class="table-foot">
+        <span id="pageInfo"></span>
+        <div style="display:flex;align-items:center;gap:16px">
+          <div class="pager" id="pager"></div>
+          <label>Rows per page:
+            <select id="pageSize" style="border:1px solid var(--border);border-radius:6px;padding:4px 6px;margin-left:4px">
+              <option>5</option><option>10</option><option>25</option>
+            </select>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="detail"></div>
+  </main>
+</div>
+
+<script>
+/* ---- Sample data. Field shapes mirror backend/app/domain/models.py (Survey/SurveyHeader/
+   SurveyElevator/RF/PhotoRef) — swap dataFetch() for a real GET /v1/surveys call in Phase 2. */
+const SURVEYS = [
+  mk(1,"2025-08-20","Burj Tower","Emaar","E-01",35,"Otis","Gen2","Otis UAE","Yes (2)",
+     "Burj Tower Project","Sheikh Zayed Road, Dubai",
+     {du:{rsrp:-85,rsrq:-8.2,sinr:12.5},etisalat:{rsrp:-88,rsrq:-9.1,sinr:10.8}}),
+  mk(2,"2025-08-18","Marina Mall","Majid Al Futtaim","E-03",12,"KONE","MonoSpace","KONE UAE","Yes (1)",
+     "Marina Mall Retrofit","Dubai Marina, Dubai",
+     {du:{rsrp:-82,rsrq:-7.4,sinr:14.1},etisalat:{rsrp:-84,rsrq:-8.0,sinr:13.2}}),
+  mk(3,"2025-08-15","Business Bay Tower","Damac","E-02",28,"Schindler","5500","Schindler UAE","No",
+     "Business Bay Phase 2","Business Bay, Dubai",
+     {du:{rsrp:-99,rsrq:-11.5,sinr:6.4},etisalat:{rsrp:-101,rsrq:-12.0,sinr:5.9}}),
+  mk(4,"2025-08-12","Dubai Hills","Emaar","E-05",18,"Otis","Gen2","Otis UAE","Yes (2)",
+     "Dubai Hills Estate","Dubai Hills, Dubai",
+     {du:{rsrp:-80,rsrq:-6.9,sinr:16.0},etisalat:{rsrp:-83,rsrq:-7.5,sinr:15.1}}),
+  mk(5,"2025-08-10","Al Qusais Tower","Private","E-01",10,"Otis","Hydro","Otis UAE","No",
+     "Al Qusais Residential","Al Qusais, Dubai",
+     {du:{rsrp:-112,rsrq:-15.0,sinr:2.1},etisalat:{rsrp:-115,rsrq:-16.2,sinr:1.4}}),
+  mk(6,"2025-08-08","JBR Beach Tower","Dubai Properties","E-04",22,"KONE","MonoSpace","KONE UAE","Yes (2)",
+     "JBR Tower B","JBR, Dubai",{du:{rsrp:-87,rsrq:-8.8,sinr:11.9},etisalat:{rsrp:-90,rsrq:-9.6,sinr:9.7}}),
+  mk(7,"2025-08-05","Downtown Views","Emaar","E-02",30,"Otis","Gen2","Otis UAE","Yes (1)",
+     "Downtown Views II","Downtown, Dubai",{du:{rsrp:-79,rsrq:-6.5,sinr:17.2},etisalat:{rsrp:-81,rsrq:-7.0,sinr:16.5}}),
+  mk(8,"2025-08-02","Silicon Gate","Dubai Silicon Oasis","E-01",8,"Schindler","3300","Schindler UAE","No",
+     "DSO Gate Block","DSO, Dubai",{du:{rsrp:-95,rsrq:-10.9,sinr:7.8},etisalat:{rsrp:-97,rsrq:-11.4,sinr:6.9}}),
+  mk(9,"2025-07-29","Palm Residences","Nakheel","E-06",14,"Otis","Gen2","Otis UAE","Yes (2)",
+     "Palm Jumeirah Villas","Palm Jumeirah, Dubai",{du:{rsrp:-84,rsrq:-8.1,sinr:13.0},etisalat:{rsrp:-86,rsrq:-8.6,sinr:12.3}}),
+  mk(10,"2025-07-25","Deira Commercial","Private","E-01",6,"KONE","MiniSpace","KONE UAE","No",
+     "Deira Block 4","Deira, Dubai",{du:{rsrp:-106,rsrq:-13.4,sinr:4.6},etisalat:{rsrp:-108,rsrq:-14.0,sinr:3.9}}),
+  mk(11,"2025-07-22","Sports City Tower","Damac","E-03",20,"Otis","Gen2","Otis UAE","Yes (1)",
+     "Sports City Res.","Dubai Sports City",{du:{rsrp:-89,rsrq:-9.4,sinr:11.1},etisalat:{rsrp:-91,rsrq:-9.9,sinr:10.0}}),
+  mk(12,"2025-07-18","Al Barsha Mall","Majid Al Futtaim","E-02",15,"Schindler","5500","Schindler UAE","Yes (2)",
+     "Al Barsha Extension","Al Barsha, Dubai",{du:{rsrp:-83,rsrq:-7.9,sinr:14.7},etisalat:{rsrp:-85,rsrq:-8.4,sinr:13.9}}),
+];
+
+function verdictOf(rsrp, sinr){
+  if (rsrp==null) return "";
+  const s = sinr==null ? 20 : sinr;
+  if (rsrp >= -90 && s >= 12) return "Good";
+  if (rsrp >= -105 && s >= 5) return "Acceptable";
+  return "Poor";
+}
+const VERDICT_LABEL = {Good:"Feasible", Acceptable:"Need Attention", Poor:"Not Feasible"};
+const VERDICT_CLASS = {Good:"good", Acceptable:"warn", Poor:"bad"};
+
+function mk(id,date,site,client,elevatorId,floors,oem,model,maint,plugs,project,address,rf){
+  const avgRsrp = (rf.du.rsrp+rf.etisalat.rsrp)/2, avgSinr=(rf.du.sinr+rf.etisalat.sinr)/2;
+  const verdict = verdictOf(avgRsrp, avgSinr);
+  return {id,date,site,client,elevatorId,floors,oem,model,maint,plugs,project,address,rf,verdict,
+    photos:["Lobby","Cabin Inside","Top of Cabin","Railing - Left","Railing - Right","Control Panel","Pinout Board","Rooftop"]};
+}
+
+/* -- state + filtering -- */
+let filtered = SURVEYS.slice(), page=1, pageSize=5, selectedId=SURVEYS[0].id, activeTab="Summary";
+
+const clientSelect = document.getElementById("fClient");
+[...new Set(SURVEYS.map(s=>s.client))].sort().forEach(c=>{
+  const o=document.createElement("option"); o.textContent=c; clientSelect.appendChild(o);
+});
+
+function applyFilters(){
+  const q = document.getElementById("fSearch").value.trim().toLowerCase();
+  const status = document.getElementById("fStatus").value;
+  const client = document.getElementById("fClient").value;
+  const date = document.getElementById("fDate").value;
+  filtered = SURVEYS.filter(s=>{
+    if (q && !(s.site.toLowerCase().includes(q) || s.client.toLowerCase().includes(q) || s.project.toLowerCase().includes(q))) return false;
+    if (status && VERDICT_LABEL[s.verdict] !== status) return false;
+    if (client && s.client !== client) return false;
+    if (date && s.date !== date) return false;
+    return true;
+  });
+  page = 1;
+  renderStats(); renderTable();
+}
+["fSearch"].forEach(id=>document.getElementById(id).addEventListener("input", applyFilters));
+["fStatus","fClient","fDate"].forEach(id=>document.getElementById(id).addEventListener("change", applyFilters));
+document.getElementById("fClear").addEventListener("click", ()=>{
+  document.getElementById("fSearch").value=""; document.getElementById("fStatus").value="";
+  document.getElementById("fClient").value=""; document.getElementById("fDate").value="";
+  applyFilters();
+});
+document.getElementById("pageSize").addEventListener("change", e=>{pageSize=+e.target.value; page=1; renderTable();});
+
+function renderStats(){
+  document.getElementById("statTotal").textContent = SURVEYS.length;
+  document.getElementById("statGood").textContent = SURVEYS.filter(s=>s.verdict==="Good").length;
+  document.getElementById("statWarn").textContent = SURVEYS.filter(s=>s.verdict==="Acceptable").length;
+  document.getElementById("statBad").textContent = SURVEYS.filter(s=>s.verdict==="Poor").length;
+}
+
+function renderTable(){
+  const tbody = document.getElementById("tbody");
+  const start = (page-1)*pageSize, rows = filtered.slice(start, start+pageSize);
+  tbody.innerHTML = rows.map((s,i)=>`
+    <tr data-id="${s.id}" class="${s.id===selectedId?'selected':''}">
+      <td>${start+i+1}</td>
+      <td>${s.date}</td>
+      <td>${s.site}</td>
+      <td>${s.client}</td>
+      <td>${s.elevatorId}</td>
+      <td>${s.floors}</td>
+      <td><span class="pill ${VERDICT_CLASS[s.verdict]}">${VERDICT_LABEL[s.verdict]}</span></td>
+      <td><span class="pill status">Completed</span></td>
+      <td><div class="row-actions">
+        <button title="View" data-view="${s.id}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        <button title="Download DOCX" data-dl="${s.id}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16"/></svg></button>
+        <button title="More"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg></button>
+      </div></td>
+    </tr>`).join("") || `<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:28px">No surveys match these filters.</td></tr>`;
+
+  tbody.querySelectorAll("tr[data-id]").forEach(tr=>{
+    tr.addEventListener("click", ()=>{ selectedId = +tr.dataset.id; renderTable(); renderDetail(); window.scrollTo({top:document.getElementById("detail").offsetTop-16, behavior:"smooth"}); });
+  });
+  tbody.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click", e=>{ e.stopPropagation(); selectedId=+b.dataset.view; renderTable(); renderDetail(); }));
+  tbody.querySelectorAll("[data-dl]").forEach(b=>b.addEventListener("click", e=>{ e.stopPropagation(); alert("Sample UI only — DOCX export wires to the mobile app's existing template-fill pipeline once the backend file API (Phase 2) is live."); }));
+
+  const total = filtered.length, pages = Math.max(1, Math.ceil(total/pageSize));
+  if (page>pages) page=pages;
+  document.getElementById("pageInfo").textContent = total
+    ? `Showing ${start+1} to ${Math.min(start+pageSize,total)} of ${total} surveys` : "No surveys";
+  const pager = document.getElementById("pager");
+  let html = `<button ${page===1?'disabled':''} data-p="prev">&lsaquo;</button>`;
+  for (let p=1;p<=pages;p++) html += `<button class="${p===page?'on':''}" data-p="${p}">${p}</button>`;
+  html += `<button ${page===pages?'disabled':''} data-p="next">&rsaquo;</button>`;
+  pager.innerHTML = html;
+  pager.querySelectorAll("button").forEach(b=>b.addEventListener("click", ()=>{
+    if (b.dataset.p==="prev") page=Math.max(1,page-1);
+    else if (b.dataset.p==="next") page=Math.min(pages,page+1);
+    else page=+b.dataset.p;
+    renderTable();
+  }));
+}
+
+const PHOTO_COLORS = ["#5b6b8c","#7a5c8f","#4f8f7a","#8f7a4f","#8f4f5c","#4f7a8f"];
+function renderDetail(){
+  const s = SURVEYS.find(x=>x.id===selectedId);
+  const detail = document.getElementById("detail");
+  if (!s){ detail.innerHTML=""; return; }
+  const rf = s.rf;
+  const avgRsrp = (rf.du.rsrp+rf.etisalat.rsrp)/2;
+  detail.innerHTML = `
+    <div class="detail-head">
+      <div>
+        <div class="detail-title">
+          <span style="width:9px;height:9px;border-radius:50%;background:var(--${VERDICT_CLASS[s.verdict]==='good'?'good-fg':VERDICT_CLASS[s.verdict]==='warn'?'warn-fg':'bad-fg'})"></span>
+          <h3>${s.site}</h3>
+          <span class="pill ${VERDICT_CLASS[s.verdict]}">${VERDICT_LABEL[s.verdict]}</span>
+        </div>
+        <div class="detail-sub">
+          <span>${s.client} &nbsp;|&nbsp; ${s.elevatorId}</span>
+        </div>
+        <div class="detail-sub">
+          <span>Survey Date: ${s.date}</span>
+          <span>${s.floors} Floors</span>
+          <span>Prepared by: Ali Hashi</span>
+        </div>
+      </div>
+      <div class="detail-actions">
+        <button class="primary" data-report>View Full Report</button>
+        <button class="ghost" data-dl2>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16"/></svg>
+          Download DOCX
+        </button>
+      </div>
+    </div>
+    <div class="tabs">
+      ${["Summary","RF Results","Railing Measurements",`Photos (${s.photos.length})`,"Documents"].map(t=>
+        `<button data-tab="${t.split(' (')[0]}" class="${t.startsWith(activeTab)?'on':''}">${t}</button>`).join("")}
+    </div>
+    <div class="tab-body" id="tabBody"></div>
+  `;
+  detail.querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click", ()=>{ activeTab=b.dataset.tab; renderDetail(); }));
+  detail.querySelector("[data-report]").addEventListener("click", ()=>alert("Sample UI only — full report view is Phase 2 (needs the live survey API)."));
+  detail.querySelector("[data-dl2]").addEventListener("click", ()=>alert("Sample UI only — DOCX export wires to the mobile app's existing template-fill pipeline once the backend file API (Phase 2) is live."));
+
+  const body = document.getElementById("tabBody");
+  if (activeTab==="Summary") body.innerHTML = summaryTab(s, avgRsrp, rf);
+  else if (activeTab==="RF Results") body.innerHTML = rfTab(s, rf);
+  else if (activeTab==="Railing Measurements") body.innerHTML = railingTab(s);
+  else if (activeTab==="Photos") body.innerHTML = photosTab(s);
+  else body.innerHTML = docsTab(s);
+}
+
+function summaryTab(s, avgRsrp, rf){
+  return `
+  <div class="grid3">
+    <div class="card">
+      <h4><span class="t">📍 Site Information</span><span class="edit-link">Edit</span></h4>
+      <dl class="kv">
+        <dt>Project</dt><dd>${s.project}</dd>
+        <dt>Client</dt><dd>${s.client}</dd>
+        <dt>Address</dt><dd>${s.address}</dd>
+        <dt>Maps Link</dt><dd><a href="#">Open in Maps</a></dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h4><span class="t">🛗 Elevator Details</span></h4>
+      <dl class="kv">
+        <dt>OEM</dt><dd>${s.oem}</dd>
+        <dt>Model</dt><dd>${s.model}</dd>
+        <dt>Elevator ID</dt><dd>${s.elevatorId}</dd>
+        <dt>Maintenance Co.</dt><dd>${s.maint}</dd>
+        <dt>Plug Points</dt><dd>${s.plugs}</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h4><span class="t">📶 RF Summary (Average)</span></h4>
+      <table class="mini">
+        <thead><tr><th>Carrier</th><th>RSRP</th><th>RSRQ</th><th>SINR</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>DU</td><td>${rf.du.rsrp}</td><td>${rf.du.rsrq}</td><td>${rf.du.sinr}</td><td><span class="pill ${VERDICT_CLASS[verdictOf(rf.du.rsrp,rf.du.sinr)]}">${VERDICT_LABEL[verdictOf(rf.du.rsrp,rf.du.sinr)]}</span></td></tr>
+          <tr><td>e&amp;</td><td>${rf.etisalat.rsrp}</td><td>${rf.etisalat.rsrq}</td><td>${rf.etisalat.sinr}</td><td><span class="pill ${VERDICT_CLASS[verdictOf(rf.etisalat.rsrp,rf.etisalat.sinr)]}">${VERDICT_LABEL[verdictOf(rf.etisalat.rsrp,rf.etisalat.sinr)]}</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div style="margin-top:16px">
+    <h4 style="font-size:13px;margin:0 0 10px;display:flex;align-items:center;gap:7px">📷 Photos (${s.photos.length})</h4>
+    ${photoGrid(s, 6)}
+  </div>`;
+}
+
+function rfTab(s, rf){
+  const sections = [
+    {name:"Charging area + lobby", du:rf.du, et:rf.etisalat},
+    {name:"On top of cabin", du:{rsrp:rf.du.rsrp+3, rsrq:rf.du.rsrq+0.6, sinr:Math.max(0,rf.du.sinr-2)}, et:{rsrp:rf.etisalat.rsrp+3, rsrq:rf.etisalat.rsrq+0.6, sinr:Math.max(0,rf.etisalat.sinr-2)}},
+    {name:"Inside cabin", du:{rsrp:rf.du.rsrp-6, rsrq:rf.du.rsrq-1.2, sinr:Math.max(0,rf.du.sinr-4)}, et:{rsrp:rf.etisalat.rsrp-6, rsrq:rf.etisalat.rsrq-1.2, sinr:Math.max(0,rf.etisalat.sinr-4)}},
+  ];
+  return `<table class="mini">
+    <thead><tr><th>Section</th><th>DU RSRP</th><th>DU SINR</th><th>e&amp; RSRP</th><th>e&amp; SINR</th><th>Verdict</th></tr></thead>
+    <tbody>${sections.map(sec=>{
+      const v = verdictOf((sec.du.rsrp+sec.et.rsrp)/2, (sec.du.sinr+sec.et.sinr)/2);
+      return `<tr><td>${sec.name}</td><td>${sec.du.rsrp.toFixed(0)}</td><td>${sec.du.sinr.toFixed(1)}</td><td>${sec.et.rsrp.toFixed(0)}</td><td>${sec.et.sinr.toFixed(1)}</td><td><span class="pill ${VERDICT_CLASS[v]}">${VERDICT_LABEL[v]}</span></td></tr>`;
+    }).join("")}</tbody>
+  </table>
+  <p style="color:var(--muted);font-size:12px;margin-top:12px">Per-row readings (not just section averages) are preserved verbatim in the canonical survey document — see BUILD_SPEC.pdf section 4.6 and backend/app/domain/legacy_mapper.py.</p>`;
+}
+
+function railingTab(s){
+  const sides = [["Front","A","B","C","D"],["Left","A","B","C"],["Right","A","B","C"],["Rear","A","B"]];
+  return `<table class="mini">
+    <thead><tr><th>Side</th><th>Point</th><th>Dimension (mm)</th></tr></thead>
+    <tbody>${sides.flatMap(([side,...pts])=>pts.map((p,i)=>
+      `<tr><td>${i===0?side:''}</td><td>${p}</td><td>${300+((s.id*7+p.charCodeAt(0))%180)}</td></tr>`)).join("")}
+    </tbody>
+  </table>
+  <p style="color:var(--muted);font-size:12px;margin-top:12px">Drawing overlay (railing sketch + smart-pen strokes) renders from the same source the mobile app saves — not reproduced in this sample view.</p>`;
+}
+
+function photoGrid(s, limit){
+  const shown = s.photos.slice(0, limit);
+  const more = s.photos.length - shown.length;
+  return `<div class="photo-grid">
+    ${shown.map((label,i)=>`<div class="photo"><div class="thumb" style="background:${PHOTO_COLORS[i%PHOTO_COLORS.length]}">${label}</div><div class="cap">${label}</div></div>`).join("")}
+    ${more>0?`<div class="photo more"><div class="thumb">+${more}<br>More Photos</div></div>`:""}
+  </div>`;
+}
+
+function photosTab(s){ return photoGrid(s, s.photos.length); }
+
+function docsTab(s){
+  const docs = [
+    [`${s.site.replace(/\s+/g,'_')}_Survey_Report.docx`, "Generated report (DOCX)"],
+    [`${s.site.replace(/\s+/g,'_')}_Site_Photos.zip`, "All site photos"],
+    [`${s.elevatorId}_Pinout_Sheet.pdf`, "Pinout reference sheet"],
+  ];
+  return docs.map(([name,desc])=>`
+    <div class="doc-row"><div><div style="font-weight:600">${name}</div><div style="color:var(--muted);font-size:12px">${desc}</div></div>
+    <button class="ghost" onclick="alert('Sample UI only.')">Download</button></div>`).join("");
+}
+
+renderStats();
+renderTable();
+renderDetail();
+</script>
+</body>
+</html>
