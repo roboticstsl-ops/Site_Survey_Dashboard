@@ -191,17 +191,17 @@
       <div class="filter-bar">
         <div class="grow">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          <input type="text" id="fSearch" placeholder="Search by site name, client, project...">
+          <input type="text" id="fSearch" placeholder="Search by site name, model, project...">
         </div>
         <select id="fStatus"><option value="">All Statuses</option><option>Feasible</option><option>Need Attention</option><option>Not Feasible</option></select>
-        <select id="fClient"><option value="">All Clients</option></select>
+        <select id="fModel"><option value="">All Models</option></select>
         <input type="date" id="fDate">
         <button class="clear" id="fClear">Clear</button>
       </div>
       <div style="overflow-x:auto">
       <table>
         <thead><tr>
-          <th>#</th><th>Date</th><th>Site Name</th><th>Client</th><th>Elevator ID</th>
+          <th>#</th><th>Date</th><th>Site Name</th><th>Elevator Model</th><th>Elevator ID</th>
           <th>Floors</th><th>Feasibility</th><th>Status</th><th>Actions</th>
         </tr></thead>
         <tbody id="tbody"></tbody>
@@ -279,20 +279,20 @@ function mk(id,date,site,client,elevatorId,floors,oem,model,maint,plugs,project,
 /* -- state + filtering -- */
 let filtered = SURVEYS.slice(), page=1, pageSize=5, selectedId=SURVEYS[0].id, activeTab="Summary";
 
-const clientSelect = document.getElementById("fClient");
-[...new Set(SURVEYS.map(s=>s.client))].sort().forEach(c=>{
-  const o=document.createElement("option"); o.textContent=c; clientSelect.appendChild(o);
+const modelSelect = document.getElementById("fModel");
+[...new Set(SURVEYS.map(s=>s.model))].sort().forEach(m=>{
+  const o=document.createElement("option"); o.textContent=m; modelSelect.appendChild(o);
 });
 
 function applyFilters(){
   const q = document.getElementById("fSearch").value.trim().toLowerCase();
   const status = document.getElementById("fStatus").value;
-  const client = document.getElementById("fClient").value;
+  const model = document.getElementById("fModel").value;
   const date = document.getElementById("fDate").value;
   filtered = SURVEYS.filter(s=>{
-    if (q && !(s.site.toLowerCase().includes(q) || s.client.toLowerCase().includes(q) || s.project.toLowerCase().includes(q))) return false;
+    if (q && !(s.site.toLowerCase().includes(q) || s.model.toLowerCase().includes(q) || s.project.toLowerCase().includes(q))) return false;
     if (status && VERDICT_LABEL[s.verdict] !== status) return false;
-    if (client && s.client !== client) return false;
+    if (model && s.model !== model) return false;
     if (date && s.date !== date) return false;
     return true;
   });
@@ -300,10 +300,10 @@ function applyFilters(){
   renderStats(); renderTable();
 }
 ["fSearch"].forEach(id=>document.getElementById(id).addEventListener("input", applyFilters));
-["fStatus","fClient","fDate"].forEach(id=>document.getElementById(id).addEventListener("change", applyFilters));
+["fStatus","fModel","fDate"].forEach(id=>document.getElementById(id).addEventListener("change", applyFilters));
 document.getElementById("fClear").addEventListener("click", ()=>{
   document.getElementById("fSearch").value=""; document.getElementById("fStatus").value="";
-  document.getElementById("fClient").value=""; document.getElementById("fDate").value="";
+  document.getElementById("fModel").value=""; document.getElementById("fDate").value="";
   applyFilters();
 });
 document.getElementById("pageSize").addEventListener("change", e=>{pageSize=+e.target.value; page=1; renderTable();});
@@ -323,7 +323,7 @@ function renderTable(){
       <td>${start+i+1}</td>
       <td>${s.date}</td>
       <td>${s.site}</td>
-      <td>${s.client}</td>
+      <td>${s.model}</td>
       <td>${s.elevatorId}</td>
       <td>${s.floors}</td>
       <td><span class="pill ${VERDICT_CLASS[s.verdict]}">${VERDICT_LABEL[s.verdict]}</span></td>
