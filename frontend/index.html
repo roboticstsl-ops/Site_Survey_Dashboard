@@ -344,6 +344,7 @@ function mk(id,date,site,client,elevatorId,floors,oem,model,maint,plugs,project,
 }
 
 /* -- state + filtering -- */
+SURVEYS.sort((a,b)=>b.date.localeCompare(a.date));  // newest first
 let filtered = SURVEYS.slice(), page=1, pageSize=5, selectedId=REAL_SURVEY.id, activeTab="Summary";
 
 const modelSelect = document.getElementById("fModel");
