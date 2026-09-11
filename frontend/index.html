@@ -154,6 +154,15 @@
   .img-viewer-stage.panning{cursor:grabbing}
   .img-viewer-stage img{max-width:96vw;max-height:96vh;width:auto;height:auto;
     object-fit:contain;user-select:none;-webkit-user-drag:none;will-change:transform;}
+  .img-viewer-nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;
+    border:none;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;font-size:22px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .img-viewer-nav:hover{background:rgba(255,255,255,.24)}
+  .img-viewer-nav.prev{left:16px}
+  .img-viewer-nav.next{right:16px}
+  .img-viewer-counter{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+    color:rgba(255,255,255,.75);font-size:12.5px;background:rgba(0,0,0,.35);
+    padding:4px 12px;border-radius:999px;pointer-events:none;}
 </style>
 </head>
 <body>
@@ -260,6 +269,9 @@
   <div class="img-viewer-stage" id="imgViewerStage">
     <img id="imgViewerImg" src="" alt="" draggable="false">
   </div>
+  <button class="img-viewer-nav prev" id="imgViewerPrev" aria-label="Previous photo">&lsaquo;</button>
+  <button class="img-viewer-nav next" id="imgViewerNext" aria-label="Next photo">&rsaquo;</button>
+  <div class="img-viewer-counter" id="imgViewerCounter"></div>
 </div>
 
 <script>
@@ -802,24 +814,42 @@ function openPhotoFolder(s, folderIndex){
   </div>`;
   document.getElementById("modalOverlay").hidden = false;
   document.getElementById("modalBody").querySelectorAll("[data-open-photo]").forEach(el=>
-    el.addEventListener("click", ()=>openImageViewer(folder.photos[+el.dataset.openPhoto])));
+    el.addEventListener("click", ()=>openImageViewer(folder, +el.dataset.openPhoto)));
 }
 
 // Fullscreen, image-only viewer: full-resolution source (p.full, falling back to
 // the grid thumb p.img if a survey has no full version), pinch/wheel-zoomed and
 // drag-panned entirely within the image itself -- the page behind it never moves.
-function openImageViewer(p){
-  const overlay = document.getElementById("imgViewer");
+// Left/Right arrows step through the rest of the same folder's photos.
+const imgViewerState = { scale:1, tx:0, ty:0, folder:null, index:-1 };
+
+function openImageViewer(folder, index){
+  imgViewerState.folder = folder;
+  imgViewerState.index = index;
+  loadImgViewerPhoto();
+  document.getElementById("imgViewer").hidden = false;
+}
+function loadImgViewerPhoto(){
+  const p = imgViewerState.folder.photos[imgViewerState.index];
   const img = document.getElementById("imgViewerImg");
   img.src = p.full || p.img;
   img.alt = p.label;
   imgViewerState.scale = 1; imgViewerState.tx = 0; imgViewerState.ty = 0;
   applyImgViewerTransform();
-  overlay.hidden = false;
+  const n = imgViewerState.folder.photos.length;
+  const counter = document.getElementById("imgViewerCounter");
+  counter.textContent = n > 1 ? `${imgViewerState.index+1} / ${n} — ${p.label}` : p.label;
+  document.getElementById("imgViewerPrev").hidden = n <= 1;
+  document.getElementById("imgViewerNext").hidden = n <= 1;
+}
+function stepImgViewer(dir){
+  const n = imgViewerState.folder.photos.length;
+  if (n <= 1) return;
+  imgViewerState.index = (imgViewerState.index + dir + n) % n;
+  loadImgViewerPhoto();
 }
 function closeImageViewer(){ document.getElementById("imgViewer").hidden = true; }
 
-const imgViewerState = { scale:1, tx:0, ty:0 };
 function applyImgViewerTransform(){
   const img = document.getElementById("imgViewerImg");
   img.style.transform = `translate(${imgViewerState.tx}px, ${imgViewerState.ty}px) scale(${imgViewerState.scale})`;
@@ -830,12 +860,26 @@ function applyImgViewerTransform(){
   const pointers = new Map();
   let mode = null;        // "pan" | "pinch" | null
   let panStart = null;    // {x,y,tx,ty}
-  let pinchStart = null;  // {dist,scale,midX,midY}
+  let pinchStart = null;  // {dist,scale}
   let moved = false;
 
   const clampScale = s => Math.min(6, Math.max(1, s));
   const dist = (a,b) => Math.hypot(a.x-b.x, a.y-b.y);
   const mid = (a,b) => ({x:(a.x+b.x)/2, y:(a.y+b.y)/2});
+
+  // Rescale while keeping the point under (clientX,clientY) visually fixed --
+  // true zoom-to-cursor/pinch-point instead of always zooming from center.
+  const zoomAt = (clientX, clientY, newScale) => {
+    const rect = stage.getBoundingClientRect();
+    const stageCx = rect.left + rect.width/2, stageCy = rect.top + rect.height/2;
+    const imgCx = stageCx + imgViewerState.tx, imgCy = stageCy + imgViewerState.ty;
+    const localX = (clientX - imgCx) / imgViewerState.scale;
+    const localY = (clientY - imgCy) / imgViewerState.scale;
+    imgViewerState.scale = newScale;
+    imgViewerState.tx = clientX - stageCx - newScale*localX;
+    imgViewerState.ty = clientY - stageCy - newScale*localY;
+    applyImgViewerTransform();
+  };
 
   stage.addEventListener("pointerdown", e=>{
     stage.setPointerCapture(e.pointerId);
@@ -863,8 +907,9 @@ function applyImgViewerTransform(){
     } else if (mode === "pinch" && pinchStart && pointers.size === 2){
       moved = true;
       const [a,b] = [...pointers.values()];
-      imgViewerState.scale = clampScale(pinchStart.scale * (dist(a,b) / pinchStart.dist));
-      applyImgViewerTransform();
+      const newScale = clampScale(pinchStart.scale * (dist(a,b) / pinchStart.dist));
+      const c = mid(a,b);
+      zoomAt(c.x, c.y, newScale);
     }
   });
   const endPointer = e=>{
@@ -885,16 +930,23 @@ function applyImgViewerTransform(){
   stage.addEventListener("wheel", e=>{
     e.preventDefault();
     const factor = e.deltaY < 0 ? 1.15 : 1/1.15;
-    imgViewerState.scale = clampScale(imgViewerState.scale * factor);
-    applyImgViewerTransform();
+    zoomAt(e.clientX, e.clientY, clampScale(imgViewerState.scale * factor));
   }, { passive:false });
 
-  stage.addEventListener("dblclick", ()=>{
-    imgViewerState.scale = 1; imgViewerState.tx = 0; imgViewerState.ty = 0;
-    applyImgViewerTransform();
+  stage.addEventListener("dblclick", e=>{
+    if (imgViewerState.scale > 1){ imgViewerState.scale = 1; imgViewerState.tx = 0; imgViewerState.ty = 0; applyImgViewerTransform(); }
+    else zoomAt(e.clientX, e.clientY, 2.5);
   });
 
-  document.addEventListener("keydown", e=>{ if (e.key === "Escape" && !overlay.hidden) closeImageViewer(); });
+  document.getElementById("imgViewerPrev").addEventListener("click", e=>{ e.stopPropagation(); stepImgViewer(-1); });
+  document.getElementById("imgViewerNext").addEventListener("click", e=>{ e.stopPropagation(); stepImgViewer(1); });
+
+  document.addEventListener("keydown", e=>{
+    if (overlay.hidden) return;
+    if (e.key === "Escape") closeImageViewer();
+    else if (e.key === "ArrowLeft") stepImgViewer(-1);
+    else if (e.key === "ArrowRight") stepImgViewer(1);
+  });
 })();
 
 function docsTab(s){
