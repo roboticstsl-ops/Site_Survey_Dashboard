@@ -387,7 +387,7 @@ function renderTable(){
   const tbody = document.getElementById("tbody");
   const start = (page-1)*pageSize, rows = filtered.slice(start, start+pageSize);
   tbody.innerHTML = rows.map((s,i)=>`
-    <tr data-id="${s.id}" class="${s.id===selectedId?'selected':''}">
+    <tr data-id="${s.id}" class="${String(s.id)===String(selectedId)?'selected':''}">
       <td>${start+i+1}</td>
       <td>${s.date}</td>
       <td>${s.site}</td>
@@ -399,15 +399,16 @@ function renderTable(){
       <td><div class="row-actions">
         <button title="View" data-view="${s.id}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg></button>
         <button title="Download DOCX" data-dl="${s.id}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16"/></svg></button>
-        <button title="More"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg></button>
+        <button title="More" data-more="${s.id}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg></button>
       </div></td>
     </tr>`).join("") || `<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:28px">No surveys match these filters.</td></tr>`;
 
   tbody.querySelectorAll("tr[data-id]").forEach(tr=>{
-    tr.addEventListener("click", ()=>{ selectedId = +tr.dataset.id; renderTable(); renderDetail(); window.scrollTo({top:document.getElementById("detail").offsetTop-16, behavior:"smooth"}); });
+    tr.addEventListener("click", ()=>{ selectedId = tr.dataset.id; renderTable(); renderDetail(); window.scrollTo({top:document.getElementById("detail").offsetTop-16, behavior:"smooth"}); });
   });
-  tbody.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click", e=>{ e.stopPropagation(); selectedId=+b.dataset.view; renderTable(); renderDetail(); }));
+  tbody.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click", e=>{ e.stopPropagation(); selectedId=b.dataset.view; renderTable(); renderDetail(); }));
   tbody.querySelectorAll("[data-dl]").forEach(b=>b.addEventListener("click", e=>{ e.stopPropagation(); alert("Sample UI only — DOCX export wires to the mobile app's existing template-fill pipeline once the backend file API (Phase 2) is live."); }));
+  tbody.querySelectorAll("[data-more]").forEach(b=>b.addEventListener("click", e=>{ e.stopPropagation(); alert("Sample UI only — row actions (archive, reassign, delete) land once survey CRUD (Phase 2) is live."); }));
 
   const total = filtered.length, pages = Math.max(1, Math.ceil(total/pageSize));
   if (page>pages) page=pages;
@@ -428,7 +429,7 @@ function renderTable(){
 
 const PHOTO_COLORS = ["#5b6b8c","#7a5c8f","#4f8f7a","#8f7a4f","#8f4f5c","#4f7a8f"];
 function renderDetail(){
-  const s = SURVEYS.find(x=>x.id===selectedId);
+  const s = SURVEYS.find(x=>String(x.id)===String(selectedId));
   const detail = document.getElementById("detail");
   if (!s){ detail.innerHTML=""; return; }
   const rf = s.rf;
