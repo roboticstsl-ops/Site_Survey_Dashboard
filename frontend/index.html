@@ -718,44 +718,54 @@ function railingDiagram({side, pts}){
 
   let inner = "";
   if (side === "Top"){
-    // Plan view: U-shaped rail frame, open toward viewer, back edge against the wall.
-    // Zones top->bottom: wall line, C (wall gap), object, A (inner rail), B callout. E/D verticals flank the object.
+    // Elevation, matching the report's own diagram: an inverted-U rail frame (top
+    // bar + 2 legs) hanging from the shaft's back/side walls, OPEN AT THE BOTTOM --
+    // not a closed box. C = wall-to-frame width (upper). A labels the top bar itself.
+    // E = short lower segment on the left leg. B (long, upper) + D (short, lower)
+    // stack on the right leg -- exactly as drawn in the report, not split evenly.
     inner = `
       <line x1="30" y1="18" x2="290" y2="18" stroke="#c3c9d4" stroke-width="2" stroke-dasharray="2 4"/>
       <text x="160" y="12" text-anchor="middle" ${TAG}>WALL</text>
       ${ext(75,50,75,36)}${ext(245,50,245,36)}
       ${dimH(75,245,32,'C',v('C'))}
-      <path d="M75,50 H245 V166 M75,50 V166" ${OUTLINE}/>
-      <line x1="108" y1="158" x2="212" y2="158" ${OUTLINE}/>
-      ${ext(75,50,42,50)}${ext(75,166,42,166)}
-      ${dimV(50,166,42,'E',v('E'))}
-      ${ext(245,50,278,50)}${ext(245,166,278,166)}
-      ${dimV(50,166,278,'D',v('D'))}
-      ${ext(108,158,108,184)}${ext(212,158,212,184)}
-      ${dimH(108,212,190,'A',v('A'))}
-      <text x="160" y="212" text-anchor="middle" ${TAG}>RAIL BAR B ${v('B')}</text>`;
+      <path d="M75,50 H245 M75,58 H245" ${OUTLINE}/>
+      <path d="M75,50 V206 M87,58 V206" ${OUTLINE}/>
+      <path d="M245,50 V206 M233,58 V206" ${OUTLINE}/>
+      <line x1="160" y1="60" x2="160" y2="72" stroke="#5b6b8c" stroke-width="1"/>
+      <rect x="122" y="73" width="76" height="14" fill="${PAPER}"/>
+      <text x="160" y="83" text-anchor="middle" ${TXT} font-size="10">BAR A ${v('A')}</text>
+      ${ext(87,150,55,150)}${ext(87,206,55,206)}
+      ${dimV(150,206,55,'E',v('E'))}
+      ${ext(233,58,265,58)}${ext(233,128,265,128)}
+      ${dimV(58,128,265,'B',v('B'))}
+      ${ext(233,128,265,128)}${ext(233,206,265,206)}
+      ${dimV(128,206,265,'D',v('D'))}`;
   } else if (side === "Rear"){
+    // Elevation: top bar + 2 posts, full height, with a second cross-rail set back
+    // from the bottom (kick-rail gap below it) -- not a plain empty rectangle.
     inner = `
-      <rect x="60" y="56" width="200" height="128" ${OUTLINE}/>
-      <line x1="72" y1="68" x2="248" y2="68" stroke="#c3c9d4" stroke-width="1.2"/>
-      <line x1="72" y1="108" x2="248" y2="108" stroke="#c3c9d4" stroke-width="1.2"/>
-      <line x1="72" y1="148" x2="248" y2="148" stroke="#c3c9d4" stroke-width="1.2"/>
+      <path d="M60,56 H260 M60,64 H260" ${OUTLINE}/>
+      <path d="M60,56 V184 M72,64 V184" ${OUTLINE}/>
+      <path d="M260,56 V184 M248,64 V184" ${OUTLINE}/>
+      <path d="M72,150 H248 M72,158 H248" ${OUTLINE}/>
       ${ext(60,56,60,36)}${ext(260,56,260,36)}
       ${dimH(60,260,30,'A',v('A'))}
       ${ext(60,56,36,56)}${ext(60,184,36,184)}
       ${dimV(56,184,36,'B',v('B'))}`;
   } else { // Left / Right
-    // Zones: A (outer, top-most), C (inner, just above object), object with 2 dividers, D (below object), B (right, vertical)
+    // Elevation: outer frame with 2 vertical dividers making 3 bays. The left bay
+    // carries a horizontal mid-rail splitting it into an upper (C) and lower (D)
+    // sub-panel -- both are vertical measurements stacked in that one bay, not
+    // separate horizontal segments across the whole width.
     inner = `
       ${ext(55,66,55,26)}${ext(275,66,275,26)}
       ${dimH(55,275,22,'A',v('A'))}
-      ${ext(55,66,55,50)}${ext(140,66,140,50)}
-      ${dimH(55,140,46,'C',v('C'))}
       <rect x="55" y="66" width="220" height="100" ${OUTLINE}/>
-      <line x1="140" y1="66" x2="140" y2="166" ${OUTLINE}/>
-      <line x1="195" y1="66" x2="195" y2="166" ${OUTLINE}/>
-      ${ext(140,166,140,182)}${ext(195,166,195,182)}
-      ${dimH(140,195,188,'D',v('D'))}
+      <line x1="120" y1="66" x2="120" y2="166" ${OUTLINE}/>
+      <line x1="210" y1="66" x2="210" y2="166" ${OUTLINE}/>
+      <line x1="65" y1="112" x2="110" y2="112" stroke="#2a3142" stroke-width="1.5"/>
+      ${dimV(66,112,80,'C',v('C'))}
+      ${dimV(112,166,80,'D',v('D'))}
       ${ext(275,66,296,66)}${ext(275,166,296,166)}
       ${dimV(66,166,296,'B',v('B'))}`;
   }
