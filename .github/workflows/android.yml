@@ -1,0 +1,66 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Inject Telegram config
+        env:
+          TG_TOKEN: ${{ secrets.TG_TOKEN }}
+          TG_CHAT: ${{ secrets.TG_CHAT }}
+        run: |
+          if [ -n "$TG_TOKEN" ] && [ -n "$TG_CHAT" ]; then
+            for f in www/index.html index.html; do
+              [ -f "$f" ] && sed -i "s|__TG_TOKEN__|${TG_TOKEN}|g; s|__TG_CHAT__|${TG_CHAT}|g" "$f"
+            done
+            echo "Telegram config injected"
+          else
+            echo "No Telegram secrets set — build without delivery"
+          fi
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Add Android platform
+        run: npx cap add android
+
+      - name: Patch Android project
+        run: node scripts/patch-android.js
+
+      - name: Sync web assets
+        run: npx cap sync android
+
+      - name: Build debug APK
+        run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+
+      - name: Name APK by version
+        run: |
+          V=$(cat VERSION | tr -d '[:space:]')
+          [ -z "$V" ] && V="dev"
+          mkdir -p out
+          cp android/app/build/outputs/apk/debug/app-debug.apk "out/app-${V}.apk"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: RF-Survey-Sheet-apk
+          path: out/app-*.apk

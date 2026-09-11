@@ -1,0 +1,36 @@
+{
+  "fields": {
+    "doc_ref": "DR-001", "prepared_by": "Ali Hashi", "date": "2026-09-11", "version": "1",
+    "project": "Site Inspection", "site_name": "Burj Tower", "client": "Emaar",
+    "address": "Sheikh Zayed Road, Dubai", "maps_link": "https://maps.app.goo.gl/example",
+    "elev_oem": "Otis", "elev_model": "Gen2", "elev_id": "E-01", "elev_maint": "Otis UAE",
+    "plug_points": "Yes (2)", "checklist_note": "Access confirmed via main lobby.",
+    "networks": "du, e&", "survey_point": "Lobby", "feasibility": "Good",
+    "btn_sku": "SKU-9", "btn_connectors": "4 pin female", "rail_note": "IOT box rear left corner",
+    "some_future_field": "should end up in legacy.unmapped"
+  },
+  "checklist": {
+    "0": "Yes", "1": "Yes", "2": "No", "3": "N-A", "4": "Yes", "5": "Yes", "6": "Yes",
+    "7": "Yes", "8": "Yes", "9": "Yes", "10": "Yes", "11": "Yes", "12": "garbage-value"
+  },
+  "rails": {
+    "top": { "dims": { "A": "201", "B": "149", "C": "" }, "draw": [{"type": "dim", "label": "A"}] },
+    "rear": { "dims": { "A": "201" }, "draw": [] },
+    "left": { "dims": {}, "draw": [] },
+    "right": { "dims": {}, "draw": [] }
+  },
+  "pinout": [
+    {"use": "signal", "color": "Black"},
+    {"use": "power", "color": "Brown"}
+  ],
+  "rf": {
+    "rf1": { "0|loc": "Main lobby / reception", "0|du.rsrp": "-68", "0|et.rsrp": "-64" },
+    "rf2": { "0|loc": "Ground", "0|du.rsrp": "-67" },
+    "rf3": {}
+  },
+  "photos": [
+    {"desc": "Wiring", "filename": "IMG_1.jpg", "img": "data:image/jpeg;base64,AAAA"}
+  ],
+  "floorCount": "25",
+  "carrier": "du"
+}
