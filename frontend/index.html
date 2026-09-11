@@ -143,6 +143,18 @@
   .modal-close{background:none;border:none;font-size:22px;line-height:1;color:var(--muted);cursor:pointer;padding:2px 6px;border-radius:6px;}
   .modal-close:hover{background:var(--bg);color:var(--text)}
   .modal-body{padding:18px 20px 22px;overflow-y:auto}
+
+  .modal.lightbox{max-width:min(1400px,96vw);width:96vw;}
+  .lightbox-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .lightbox-toolbar button{width:30px;height:30px;border:1px solid var(--border);background:var(--surface);
+    border-radius:6px;cursor:pointer;font-size:15px;color:var(--text);display:flex;align-items:center;justify-content:center}
+  .lightbox-toolbar button:hover{border-color:var(--accent);color:var(--accent)}
+  .lightbox-toolbar .pct{font-size:12.5px;color:var(--muted);min-width:42px;text-align:center;font-variant-numeric:tabular-nums}
+  .lightbox-frame{overflow:auto;max-height:74vh;background:var(--bg);border-radius:8px;
+    display:flex;align-items:center;justify-content:center;touch-action:pan-x pan-y pinch-zoom;}
+  .lightbox-frame img{display:block;cursor:zoom-in;transition:width .12s ease}
+  .lightbox-frame.zoomed img{cursor:zoom-out}
+  .lightbox-frame.zoomed{align-items:flex-start;justify-content:flex-start}
 </style>
 </head>
 <body>
@@ -236,7 +248,7 @@
 </div>
 
 <div class="modal-overlay" id="modalOverlay" hidden>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal" id="modalDialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-head">
       <h3 id="modalTitle"></h3>
       <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
@@ -571,6 +583,7 @@ function renderDetail(){
 
 function openRfModal(s){
   const overlay = document.getElementById("modalOverlay");
+  document.getElementById("modalDialog").classList.remove("lightbox");
   document.getElementById("modalTitle").textContent = `Full RF Measurements — ${s.site}`;
   document.getElementById("modalBody").innerHTML = fullRfTable(s);
   overlay.hidden = false;
@@ -775,6 +788,7 @@ function photosTab(s){ return folderGrid(s); }
 
 function openPhotoFolder(s, folderIndex){
   const folder = photoFolders(s)[folderIndex];
+  document.getElementById("modalDialog").classList.remove("lightbox");
   document.getElementById("modalTitle").textContent = folder.name;
   document.getElementById("modalBody").innerHTML = `<div class="photo-grid">
     ${folder.photos.map((p,i)=>`
@@ -790,18 +804,61 @@ function openPhotoFolder(s, folderIndex){
 
 function openPhotoLightbox(s, folder, photoIndex){
   const p = folder.photos[photoIndex];
+  document.getElementById("modalDialog").classList.add("lightbox");
   document.getElementById("modalTitle").textContent = `${folder.name} — ${p.label}`;
-  document.getElementById("modalBody").innerHTML = `
-    <button class="ghost" data-back-to-folder style="margin-bottom:12px">&lsaquo; Back to ${folder.name}</button>
-    <div style="display:flex;justify-content:center">
-      ${p.img
-        ? `<img src="${p.img}" alt="${p.label}" style="max-width:100%;max-height:65vh;border-radius:8px;display:block">`
-        : `<div class="thumb" style="width:100%;aspect-ratio:4/3;background:${PHOTO_COLORS[photoIndex%PHOTO_COLORS.length]};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;border-radius:8px">${p.label}</div>`}
+  const body = document.getElementById("modalBody");
+  if (!p.img){
+    body.innerHTML = `<button class="ghost" data-back-to-folder style="margin-bottom:12px">&lsaquo; Back to ${folder.name}</button>
+      <div class="thumb" style="width:100%;aspect-ratio:4/3;background:${PHOTO_COLORS[photoIndex%PHOTO_COLORS.length]};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;border-radius:8px">${p.label}</div>`;
+    body.querySelector("[data-back-to-folder]").addEventListener("click", ()=>{
+      const idx = photoFolders(s).findIndex(f=>f.name===folder.name);
+      openPhotoFolder(s, idx >= 0 ? idx : 0);
+    });
+    return;
+  }
+  body.innerHTML = `
+    <div class="lightbox-toolbar">
+      <button class="ghost" data-back-to-folder>&lsaquo; Back to ${folder.name}</button>
+      <span style="flex:1"></span>
+      <button data-zoom-out title="Zoom out">&minus;</button>
+      <span class="pct" id="zoomPct">100%</span>
+      <button data-zoom-in title="Zoom in">&plus;</button>
+      <button data-zoom-reset title="Reset">&#8634;</button>
+    </div>
+    <div class="lightbox-frame" id="lightboxFrame">
+      <img id="lightboxImg" src="${p.img}" alt="${p.label}" style="width:100%">
     </div>`;
-  document.getElementById("modalBody").querySelector("[data-back-to-folder]").addEventListener("click", ()=>{
+  body.querySelector("[data-back-to-folder]").addEventListener("click", ()=>{
     const idx = photoFolders(s).findIndex(f=>f.name===folder.name);
     openPhotoFolder(s, idx >= 0 ? idx : 0);
   });
+
+  const frame = document.getElementById("lightboxFrame");
+  const img = document.getElementById("lightboxImg");
+  const pctLabel = document.getElementById("zoomPct");
+  let zoom = 100; // percent, relative to frame-fitted width
+  const levels = [50,75,100,150,200,300,400];
+  const applyZoom = () => {
+    img.style.width = zoom + "%";
+    pctLabel.textContent = zoom + "%";
+    frame.classList.toggle("zoomed", zoom > 100);
+  };
+  const stepZoom = dir => {
+    const i = levels.reduce((best,l,idx)=>Math.abs(l-zoom)<Math.abs(levels[best]-zoom)?idx:best, 0);
+    zoom = levels[Math.min(levels.length-1, Math.max(0, i + dir))];
+    applyZoom();
+  };
+  body.querySelector("[data-zoom-in]").addEventListener("click", ()=>stepZoom(1));
+  body.querySelector("[data-zoom-out]").addEventListener("click", ()=>stepZoom(-1));
+  body.querySelector("[data-zoom-reset]").addEventListener("click", ()=>{ zoom=100; applyZoom(); });
+  img.addEventListener("click", ()=>{ zoom = zoom > 100 ? 100 : 200; applyZoom(); });
+  // trackpad pinch / ctrl+wheel zooms the image only -- never the page -- plain
+  // wheel/scroll still pans the frame natively via its own overflow:auto.
+  frame.addEventListener("wheel", e=>{
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    stepZoom(e.deltaY < 0 ? 1 : -1);
+  }, { passive:false });
 }
 
 function docsTab(s){
