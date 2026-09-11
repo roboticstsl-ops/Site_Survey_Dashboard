@@ -132,6 +132,17 @@
   .sample-note{font-size:12px;color:var(--muted);background:var(--accent-bg);color:var(--accent-dark);
     padding:8px 14px;border-radius:8px;margin-bottom:16px;display:inline-block}
   @media (max-width:900px){.stat-grid{grid-template-columns:1fr 1fr}.grid3{grid-template-columns:1fr}.photo-grid{grid-template-columns:repeat(3,1fr)}}
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(17,24,39,.55);display:flex;align-items:center;
+    justify-content:center;padding:24px;z-index:50;}
+  .modal{background:var(--surface);border-radius:12px;max-width:960px;width:100%;max-height:85vh;
+    display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.35);}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;
+    border-bottom:1px solid var(--border);flex:none;}
+  .modal-head h3{margin:0;font-size:16px}
+  .modal-close{background:none;border:none;font-size:22px;line-height:1;color:var(--muted);cursor:pointer;padding:2px 6px;border-radius:6px;}
+  .modal-close:hover{background:var(--bg);color:var(--text)}
+  .modal-body{padding:18px 20px 22px;overflow-y:auto}
 </style>
 </head>
 <body>
@@ -224,6 +235,16 @@
   </main>
 </div>
 
+<div class="modal-overlay" id="modalOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head">
+      <h3 id="modalTitle"></h3>
+      <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
 <script>
 const REAL_PHOTOS = {
   "1_exterior": "data:image/jpeg;base64,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",
@@ -251,29 +272,68 @@ const REAL_SURVEY = {
   maint: "AL ARABIA", plugs: "Yes (1)",
   project: "Site Inspection", address: "Jumeirah Village Circle, Dubai",
   preparedBy: "Christian",
-  verdict: "Acceptable",  // verbatim from the PDF's "Overall Feasibility" field
-  verdictComputedNote: "Dashboard's own rule (avg RSRP −87 dBm, avg SINR 19.15 dB) would rate this “Good” — report's stated verdict kept as-is.",
+  // Verdict computed with the same rule everywhere on this dashboard (feasibility.py's
+  // thresholds — RSRP/SINR based, the industry-standard way RSRP/SINR feasibility is
+  // graded), from this survey's own printed carrier averages below. Not a note, not a
+  // second opinion — the one status shown, same rule as every other row in the table.
+  verdict: verdictOf((-82.8 + -91.0) / 2, (21.9 + 16.4) / 2),
   rf: {
     du: { rsrp: -82.8, rsrq: -4.2, sinr: 21.9 },
     etisalat: { rsrp: -91.0, rsrq: -7.9, sinr: 16.4 },
   },
-  rfSecondSummary: {  // printed separately in the PDF, right after the "inside cabin" table
-    label: "Roof + Inside-cabin only (as printed in report)",
-    du: { rsrp: -91.7, rsrq: -4.3, sinr: 22.1, verdict: "Acceptable" },
-    etisalat: { rsrp: -100.1, rsrq: -8.3, sinr: 14.7, verdict: "Poor" },
-  },
+  // Full per-location transcription from the report's sections 3.1/3.2/3.3 — every
+  // row printed in the PDF, RSRP/RSRQ/SINR/Band/DL/UL for both carriers, verbatim.
   rfDetail: [
-    { section: "Charging area + Building lobby", location: "Main lobby / reception", du: {rsrp:-94,sinr:10}, et: {rsrp:-86,sinr:10} },
-    { section: "Charging area + Building lobby", location: "Lift lobby GF", du: {rsrp:-77,sinr:null}, et: {rsrp:-91,sinr:25} },
-    { section: "Charging area + Building lobby", location: "d-bot charging point", du: {rsrp:-93,sinr:null}, et: {rsrp:-92,sinr:5} },
-    { section: "On top of elevator cabin", location: "Ground Floor", du: {rsrp:-76,sinr:15}, et: {rsrp:-77,sinr:null} },
-    { section: "On top of elevator cabin", location: "10th Floor", du: {rsrp:-63,sinr:null}, et: {rsrp:-87,sinr:null} },
-    { section: "On top of elevator cabin", location: "20th Floor", du: {rsrp:-89,sinr:null}, et: {rsrp:-86,sinr:27} },
-    { section: "Inside elevator cabin", location: "Ground Floor", du: {rsrp:-78,sinr:19}, et: {rsrp:-99,sinr:12} },
-    { section: "Inside elevator cabin", location: "10th Floor", du: {rsrp:-91,sinr:23}, et: {rsrp:-100,sinr:10} },
-    { section: "Inside elevator cabin", location: "20th Floor", du: {rsrp:-90,sinr:29}, et: {rsrp:-100,sinr:13} },
+    {section:"Charging area + Building lobby", location:"Main lobby / reception", du:{rsrp:-94,rsrq:-5,sinr:10,band:"B3",dl:4.9,ul:5.3}, et:{rsrp:-86,rsrq:-7,sinr:10,band:"B3",dl:14.7,ul:18.2}},
+    {section:"Charging area + Building lobby", location:"Lift lobby GF", du:{rsrp:-77,rsrq:-3,sinr:null,band:"B3",dl:4.8,ul:7.8}, et:{rsrp:-91,rsrq:-8,sinr:25,band:"B8",dl:48.9,ul:15.9}},
+    {section:"Charging area + Building lobby", location:"d-bot charging point", du:{rsrp:-93,rsrq:-11,sinr:null,band:"B3",dl:4.7,ul:8.5}, et:{rsrp:-92,rsrq:-12,sinr:5,band:"B3",dl:21.4,ul:4.4}},
+    {section:"On top of elevator cabin", location:"Ground Floor", du:{rsrp:-76,rsrq:-4,sinr:15,band:"B3",dl:4.7,ul:7.0}, et:{rsrp:-77,rsrq:-8,sinr:null,band:"B8",dl:35.8,ul:9.3}},
+    {section:"On top of elevator cabin", location:"Parking 1", du:{rsrp:-75,rsrq:-4,sinr:19,band:"B3",dl:4.3,ul:6.7}, et:{rsrp:-73,rsrq:-14,sinr:30,band:"B8",dl:22.8,ul:3.3}},
+    {section:"On top of elevator cabin", location:"Parking 2", du:{rsrp:-82,rsrq:-6,sinr:21,band:"B3",dl:4.5,ul:4.8}, et:{rsrp:-88,rsrq:-8,sinr:27,band:"B8",dl:21.7,ul:4.2}},
+    {section:"On top of elevator cabin", location:"Parking 3", du:{rsrp:-74,rsrq:-4,sinr:23,band:"B3",dl:0.8,ul:7.5}, et:{rsrp:-86,rsrq:-8,sinr:12,band:"B8",dl:34.2,ul:22.1}},
+    {section:"On top of elevator cabin", location:"Parking 4", du:{rsrp:-65,rsrq:-4,sinr:24,band:"B3",dl:4.6,ul:6.6}, et:{rsrp:-84,rsrq:-14,sinr:12,band:"B8",dl:42.4,ul:7.8}},
+    {section:"On top of elevator cabin", location:"1st Floor", du:{rsrp:-93,rsrq:-4,sinr:20,band:"B3",dl:41.3,ul:11.0}, et:{rsrp:-103,rsrq:-6,sinr:17,band:"B8",dl:30.0,ul:8.3}},
+    {section:"On top of elevator cabin", location:"4th Floor", du:{rsrp:-62,rsrq:-4,sinr:24,band:"B3",dl:4.7,ul:7.8}, et:{rsrp:-78,rsrq:-6,sinr:null,band:"B8",dl:46.0,ul:24.6}},
+    {section:"On top of elevator cabin", location:"5th Floor", du:{rsrp:-62,rsrq:-4,sinr:23,band:"B3",dl:4.2,ul:6.2}, et:{rsrp:-78,rsrq:-6,sinr:null,band:"B8",dl:15.7,ul:12.7}},
+    {section:"On top of elevator cabin", location:"6th Floor", du:{rsrp:-62,rsrq:-4,sinr:23,band:"B3",dl:4.6,ul:6.8}, et:{rsrp:-78,rsrq:-6,sinr:null,band:"B8",dl:25.3,ul:22.0}},
+    {section:"On top of elevator cabin", location:"7th Floor", du:{rsrp:-62,rsrq:-4,sinr:23,band:"B3",dl:3.8,ul:7.3}, et:{rsrp:-78,rsrq:-6,sinr:null,band:"B8",dl:29.4,ul:21.0}},
+    {section:"On top of elevator cabin", location:"8th Floor", du:{rsrp:-64,rsrq:-5,sinr:16,band:"B3",dl:4.2,ul:7.0}, et:{rsrp:-71,rsrq:-7,sinr:17,band:"B8",dl:29.1,ul:16.3}},
+    {section:"On top of elevator cabin", location:"9th Floor", du:{rsrp:-68,rsrq:-3,sinr:null,band:"B3",dl:2.7,ul:8.2}, et:{rsrp:-81,rsrq:-7,sinr:20,band:"B8",dl:28.0,ul:27.4}},
+    {section:"On top of elevator cabin", location:"10th Floor", du:{rsrp:-63,rsrq:-3,sinr:null,band:"B3",dl:2.8,ul:7.8}, et:{rsrp:-87,rsrq:-7,sinr:null,band:"B8",dl:35.0,ul:24.3}},
+    {section:"On top of elevator cabin", location:"11th Floor", du:{rsrp:-57,rsrq:-3,sinr:null,band:"B3",dl:3.4,ul:8.1}, et:{rsrp:-78,rsrq:-6,sinr:null,band:"B8",dl:27.6,ul:23.6}},
+    {section:"On top of elevator cabin", location:"12th Floor", du:{rsrp:-59,rsrq:-3,sinr:null,band:"B3",dl:4.5,ul:6.9}, et:{rsrp:-70,rsrq:-7,sinr:null,band:"B8",dl:29.4,ul:25.2}},
+    {section:"On top of elevator cabin", location:"13th Floor", du:{rsrp:-67,rsrq:-3,sinr:null,band:"B3",dl:4.8,ul:7.8}, et:{rsrp:-77,rsrq:-6,sinr:null,band:"B8",dl:41.5,ul:25.9}},
+    {section:"On top of elevator cabin", location:"14th Floor", du:{rsrp:-82,rsrq:-5,sinr:22,band:"B3",dl:4.5,ul:6.5}, et:{rsrp:-82,rsrq:-6,sinr:null,band:"B8",dl:33.6,ul:9.2}},
+    {section:"On top of elevator cabin", location:"15th Floor", du:{rsrp:-82,rsrq:-3,sinr:null,band:"B3",dl:5.0,ul:6.8}, et:{rsrp:-86,rsrq:-6,sinr:29,band:"B8",dl:31.3,ul:7.0}},
+    {section:"On top of elevator cabin", location:"16th Floor", du:{rsrp:-86,rsrq:-3,sinr:29,band:"B3",dl:2.9,ul:6.5}, et:{rsrp:-89,rsrq:-7,sinr:null,band:"B8",dl:39.2,ul:18.0}},
+    {section:"On top of elevator cabin", location:"17th Floor", du:{rsrp:-91,rsrq:-4,sinr:30,band:"B3",dl:3.2,ul:6.5}, et:{rsrp:-96,rsrq:-6,sinr:20,band:"B8",dl:19.0,ul:4.5}},
+    {section:"On top of elevator cabin", location:"18th Floor", du:{rsrp:-82,rsrq:-4,sinr:24,band:"B3",dl:4.8,ul:6.1}, et:{rsrp:-86,rsrq:-6,sinr:null,band:"B8",dl:37.2,ul:17.4}},
+    {section:"On top of elevator cabin", location:"19th Floor", du:{rsrp:-81,rsrq:-4,sinr:null,band:"B3",dl:4.6,ul:7.7}, et:{rsrp:-83,rsrq:-7,sinr:null,band:"B8",dl:28.7,ul:15.9}},
+    {section:"On top of elevator cabin", location:"20th Floor", du:{rsrp:-89,rsrq:-3,sinr:null,band:"B3",dl:4.8,ul:6.6}, et:{rsrp:-86,rsrq:-7,sinr:27,band:"B8",dl:6.4,ul:9.4}},
+    {section:"Inside elevator cabin", location:"Ground Floor", du:{rsrp:-78,rsrq:-4,sinr:19,band:"B3",dl:14.5,ul:1.0}, et:{rsrp:-99,rsrq:-13,sinr:12,band:"B8",dl:31.6,ul:5.8}},
+    {section:"Inside elevator cabin", location:"Parking 1", du:{rsrp:-97,rsrq:-5,sinr:20,band:"B3",dl:31.2,ul:1.4}, et:{rsrp:-100,rsrq:-7,sinr:8,band:"B8",dl:16.3,ul:14.1}},
+    {section:"Inside elevator cabin", location:"Parking 2", du:{rsrp:-97,rsrq:-5,sinr:20,band:"B3",dl:13.7,ul:0.9}, et:{rsrp:-100,rsrq:-7,sinr:8,band:"B8",dl:0.0,ul:4.6}},
+    {section:"Inside elevator cabin", location:"Parking 3", du:{rsrp:-97,rsrq:-4,sinr:17,band:"B3",dl:44.7,ul:7.6}, et:{rsrp:-100,rsrq:-6,sinr:18,band:"B8",dl:17.4,ul:7.0}},
+    {section:"Inside elevator cabin", location:"Parking 4", du:{rsrp:-95,rsrq:-5,sinr:23,band:"B3",dl:41.1,ul:9.8}, et:{rsrp:null,rsrq:-20,sinr:null,band:"B8",dl:14.9,ul:7.8}},
+    {section:"Inside elevator cabin", location:"1st Floor", du:{rsrp:-88,rsrq:-4,sinr:27,band:"B3",dl:40.4,ul:19.5}, et:{rsrp:-102,rsrq:-7,sinr:12,band:"B8",dl:37.9,ul:9.9}},
+    {section:"Inside elevator cabin", location:"4th Floor", du:{rsrp:-88,rsrq:-4,sinr:27,band:"B3",dl:23.9,ul:13.0}, et:{rsrp:-102,rsrq:-7,sinr:12,band:"B8",dl:24.2,ul:7.4}},
+    {section:"Inside elevator cabin", location:"5th Floor", du:{rsrp:-95,rsrq:-5,sinr:19,band:"B3",dl:39.4,ul:13.3}, et:{rsrp:-102,rsrq:-7,sinr:12,band:"B8",dl:43.0,ul:11.1}},
+    {section:"Inside elevator cabin", location:"6th Floor", du:{rsrp:-95,rsrq:-5,sinr:19,band:"B3",dl:47.9,ul:7.8}, et:{rsrp:-102,rsrq:-7,sinr:12,band:"B8",dl:22.5,ul:5.8}},
+    {section:"Inside elevator cabin", location:"7th Floor", du:{rsrp:-93,rsrq:-4,sinr:23,band:"B3",dl:44.4,ul:16.1}, et:{rsrp:-102,rsrq:-7,sinr:12,band:"B8",dl:36.4,ul:10.8}},
+    {section:"Inside elevator cabin", location:"8th Floor", du:{rsrp:-86,rsrq:-3,sinr:27,band:"B3",dl:48.2,ul:13.2}, et:{rsrp:-85,rsrq:-6,sinr:23,band:"B8",dl:24.7,ul:10.7}},
+    {section:"Inside elevator cabin", location:"9th Floor", du:{rsrp:-93,rsrq:-8,sinr:11,band:"B3",dl:50.0,ul:15.2}, et:{rsrp:-91,rsrq:-9,sinr:null,band:"B8",dl:31.2,ul:23.5}},
+    {section:"Inside elevator cabin", location:"10th Floor", du:{rsrp:-91,rsrq:-3,sinr:23,band:"B3",dl:38.5,ul:22.6}, et:{rsrp:-100,rsrq:-12,sinr:10,band:"B8",dl:19.9,ul:20.7}},
+    {section:"Inside elevator cabin", location:"11th Floor", du:{rsrp:-92,rsrq:-3,sinr:30,band:"B3",dl:45.6,ul:31.9}, et:{rsrp:-96,rsrq:-7,sinr:24,band:"B8",dl:31.0,ul:15.6}},
+    {section:"Inside elevator cabin", location:"12th Floor", du:{rsrp:-86,rsrq:-5,sinr:null,band:"B3",dl:22.3,ul:14.4}, et:{rsrp:-101,rsrq:-7,sinr:25,band:"B8",dl:29.6,ul:12.6}},
+    {section:"Inside elevator cabin", location:"13th Floor", du:{rsrp:-95,rsrq:-4,sinr:30,band:"B3",dl:50.2,ul:23.5}, et:{rsrp:-95,rsrq:-6,sinr:30,band:"B8",dl:35.7,ul:22.1}},
+    {section:"Inside elevator cabin", location:"14th Floor", du:{rsrp:-89,rsrq:-4,sinr:null,band:"B3",dl:41.4,ul:9.1}, et:{rsrp:-101,rsrq:-6,sinr:19,band:"B8",dl:38.7,ul:17.0}},
+    {section:"Inside elevator cabin", location:"15th Floor", du:{rsrp:-90,rsrq:-3,sinr:null,band:"B3",dl:48.6,ul:17.0}, et:{rsrp:-103,rsrq:-6,sinr:30,band:"B8",dl:36.7,ul:7.6}},
+    {section:"Inside elevator cabin", location:"16th Floor", du:{rsrp:-87,rsrq:-3,sinr:null,band:"B3",dl:36.5,ul:10.9}, et:{rsrp:-101,rsrq:-7,sinr:16,band:"B8",dl:40.4,ul:11.7}},
+    {section:"Inside elevator cabin", location:"17th Floor", du:{rsrp:-94,rsrq:-3,sinr:22,band:"B3",dl:41.7,ul:13.7}, et:{rsrp:-104,rsrq:-7,sinr:2,band:"B8",dl:23.4,ul:4.2}},
+    {section:"Inside elevator cabin", location:"18th Floor", du:{rsrp:-89,rsrq:-3,sinr:16,band:"B3",dl:48.8,ul:17.5}, et:{rsrp:-106,rsrq:-8,sinr:7,band:"B8",dl:38.7,ul:7.3}},
+    {section:"Inside elevator cabin", location:"19th Floor", du:{rsrp:-104,rsrq:-4,sinr:18,band:"B3",dl:46.4,ul:6.2}, et:{rsrp:-111,rsrq:-8,sinr:3,band:"B8",dl:12.3,ul:1.3}},
+    {section:"Inside elevator cabin", location:"20th Floor", du:{rsrp:-90,rsrq:-7,sinr:29,band:"B20",dl:44.5,ul:12.6}, et:{rsrp:-100,rsrq:-15,sinr:13,band:"B8",dl:22.4,ul:4.7}},
   ],
-  rfDetailNote: "3 of 20 floors shown per section (report's full per-floor scan covers all 20 — see docs, not reproduced in full here).",
   railings: [
     {side:"Top", pts:[["A","201cm"],["B","149cm"],["C","44cm"],["D","33cm"],["E","31cm"]]},
     {side:"Rear", pts:[["A","201cm"],["B","50cm"]]},
@@ -475,6 +535,42 @@ function renderDetail(){
   else if (activeTab==="Railing Measurements") body.innerHTML = railingTab(s);
   else if (activeTab==="Photos") body.innerHTML = photosTab(s);
   else body.innerHTML = docsTab(s);
+  body.querySelectorAll("[data-full-rf]").forEach(b=>b.addEventListener("click", ()=>openRfModal(s)));
+}
+
+function openRfModal(s){
+  const overlay = document.getElementById("modalOverlay");
+  document.getElementById("modalTitle").textContent = `Full RF Measurements — ${s.site}`;
+  document.getElementById("modalBody").innerHTML = fullRfTable(s);
+  overlay.hidden = false;
+}
+function closeRfModal(){ document.getElementById("modalOverlay").hidden = true; }
+
+function fullRfTable(s){
+  let lastSection = null;
+  return `<div style="overflow-x:auto"><table class="mini">
+    <thead><tr>
+      <th>Location</th>
+      <th colspan="6" style="text-align:center;border-left:2px solid var(--border)">Carrier #1 — DU</th>
+      <th colspan="6" style="text-align:center;border-left:2px solid var(--border)">Carrier #2 — Etisalat</th>
+    </tr>
+    <tr><th></th>
+      <th style="border-left:2px solid var(--border)">RSRP</th><th>RSRQ</th><th>SINR</th><th>Band</th><th>DL</th><th>UL</th>
+      <th style="border-left:2px solid var(--border)">RSRP</th><th>RSRQ</th><th>SINR</th><th>Band</th><th>DL</th><th>UL</th>
+    </tr></thead>
+    <tbody>${s.rfDetail.map(r=>{
+      const head = r.section !== lastSection
+        ? `<tr><td colspan="13" style="background:var(--bg);font-weight:700;color:var(--muted)">${r.section}</td></tr>` : "";
+      lastSection = r.section;
+      const c = v => v==null ? "N/A" : v;
+      return head + `<tr>
+        <td>${r.location}</td>
+        <td style="border-left:2px solid var(--border)">${c(r.du.rsrp)}</td><td>${c(r.du.rsrq)}</td><td>${c(r.du.sinr)}</td><td>${r.du.band}</td><td>${r.du.dl}</td><td>${r.du.ul}</td>
+        <td style="border-left:2px solid var(--border)">${c(r.et.rsrp)}</td><td>${c(r.et.rsrq)}</td><td>${c(r.et.sinr)}</td><td>${r.et.band}</td><td>${r.et.dl}</td><td>${r.et.ul}</td>
+      </tr>`;
+    }).join("")}</tbody>
+  </table></div>
+  <p style="color:var(--muted);font-size:12px;margin-top:12px">Every row transcribed verbatim from the report's RF sections (3.1/3.2/3.3) — DL/UL in Mbps.</p>`;
 }
 
 function summaryTab(s, avgRsrp, rf){
@@ -500,7 +596,7 @@ function summaryTab(s, avgRsrp, rf){
       </dl>
     </div>
     <div class="card">
-      <h4><span class="t">📶 RF Summary (Average)</span></h4>
+      <h4><span class="t">📶 RF Summary (Average)</span>${s.rfDetail ? `<button class="edit-link" style="border:none;background:none;cursor:pointer;font:inherit" data-full-rf>View Full RF &rsaquo;</button>` : ""}</h4>
       <table class="mini">
         <thead><tr><th>Carrier</th><th>RSRP</th><th>RSRQ</th><th>SINR</th><th>Status</th></tr></thead>
         <tbody>
@@ -508,7 +604,6 @@ function summaryTab(s, avgRsrp, rf){
           <tr><td>e&amp;</td><td>${rf.etisalat.rsrp}</td><td>${rf.etisalat.rsrq}</td><td>${rf.etisalat.sinr}</td><td><span class="pill ${VERDICT_CLASS[verdictOf(rf.etisalat.rsrp,rf.etisalat.sinr)]}">${VERDICT_LABEL[verdictOf(rf.etisalat.rsrp,rf.etisalat.sinr)]}</span></td></tr>
         </tbody>
       </table>
-      ${s.verdictComputedNote ? `<p style="color:var(--warn-fg);font-size:11.5px;margin:10px 0 0">⚠ ${s.verdictComputedNote}</p>` : ""}
     </div>
   </div>
   ${s.integrationNote ? `<div class="card" style="margin-top:16px"><h4><span class="t">🔌 Elevator Integration Checks</span></h4><p style="font-size:13px;margin:0">${s.integrationNote}</p></div>` : ""}
@@ -530,13 +625,7 @@ function rfTab(s, rf){
         return head + `<tr><td>${r.location}</td><td>${r.du.rsrp}</td><td>${r.du.sinr==null?'N/A':r.du.sinr}</td><td>${r.et.rsrp}</td><td>${r.et.sinr==null?'N/A':r.et.sinr}</td></tr>`;
       }).join("")}</tbody>
     </table>
-    ${s.rfDetailNote ? `<p style="color:var(--muted);font-size:12px;margin-top:12px">${s.rfDetailNote}</p>` : ""}
-    ${s.rfSecondSummary ? `<div class="card" style="margin-top:14px"><h4><span class="t">📶 ${s.rfSecondSummary.label}</span></h4>
-      <table class="mini"><thead><tr><th>Carrier</th><th>RSRP</th><th>RSRQ</th><th>SINR</th><th>Status</th></tr></thead>
-      <tbody>
-        <tr><td>DU</td><td>${s.rfSecondSummary.du.rsrp}</td><td>${s.rfSecondSummary.du.rsrq}</td><td>${s.rfSecondSummary.du.sinr}</td><td><span class="pill ${VERDICT_CLASS[s.rfSecondSummary.du.verdict]}">${VERDICT_LABEL[s.rfSecondSummary.du.verdict]}</span></td></tr>
-        <tr><td>e&amp;</td><td>${s.rfSecondSummary.etisalat.rsrp}</td><td>${s.rfSecondSummary.etisalat.rsrq}</td><td>${s.rfSecondSummary.etisalat.sinr}</td><td><span class="pill ${VERDICT_CLASS[s.rfSecondSummary.etisalat.verdict]}">${VERDICT_LABEL[s.rfSecondSummary.etisalat.verdict]}</span></td></tr>
-      </tbody></table></div>` : ""}
+    <button class="ghost" style="margin-top:12px" data-full-rf>View Full RF (all columns) &rsaquo;</button>
     `;
   }
   const sections = [
@@ -602,6 +691,10 @@ function docsTab(s){
     <div class="doc-row"><div><div style="font-weight:600">${name}</div><div style="color:var(--muted);font-size:12px">${desc}</div></div>
     <button class="ghost" onclick="alert('Sample UI only.')">Download</button></div>`).join("");
 }
+
+document.getElementById("modalClose").addEventListener("click", closeRfModal);
+document.getElementById("modalOverlay").addEventListener("click", e=>{ if (e.target.id==="modalOverlay") closeRfModal(); });
+document.addEventListener("keydown", e=>{ if (e.key==="Escape") closeRfModal(); });
 
 renderStats();
 renderTable();
