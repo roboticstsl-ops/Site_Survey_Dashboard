@@ -689,45 +689,90 @@ function railingTab(s){
   <p style="color:var(--muted);font-size:12px;margin-top:12px">Drawing overlay (railing sketch + smart-pen strokes) renders from the same source the mobile app saves — not reproduced in this sample view.</p>`;
 }
 
+/* CAD-style drafting: object outline in bold linework, dimension lines with
+   extension lines + arrowheads + knockout text, drafting-grid backdrop,
+   monospace annotation -- ISO/ANSI dimensioning convention, not a mockup box. */
 function railingDiagram({side, pts}){
-  const v = letter => (pts.find(p=>p[0]===letter)||[])[1] || "";
-  const W=280, H=170, S='stroke="var(--muted)" stroke-width="2" fill="none"', L='fill="var(--accent)" font-size="12" font-weight="700"', D='fill="var(--text)" font-size="11"';
+  const v = letter => (pts.find(p=>p[0]===letter)||[])[1] || "?";
+  const W = 320, H = 240;
+  const PAPER = "#f4f6fa";
+  const OUTLINE = 'stroke="#2a3142" stroke-width="2.5" fill="none" stroke-linejoin="miter"';
+  const EXT = 'stroke="#9aa2b1" stroke-width="1"';
+  const DIM = 'stroke="#2a3142" stroke-width="1" marker-start="url(#dimArrowStart)" marker-end="url(#dimArrowEnd)"';
+  const TXT = 'font-family="Consolas, \'SF Mono\', \'Courier New\', monospace" font-size="11" font-weight="700" fill="#1a2333"';
+  const TAG = 'font-family="Consolas, \'SF Mono\', \'Courier New\', monospace" font-size="9.5" font-weight="700" fill="#5b6b8c" letter-spacing="1"';
+
+  // extension line: from object point (ox,oy) out past the dimension line (to ex,ey), with a small gap at the object
+  const ext = (ox,oy,ex,ey) => { const gap=4, dx=ex-ox, dy=ey-oy, len=Math.hypot(dx,dy)||1, ux=dx/len, uy=dy/len;
+    return `<line x1="${ox+ux*gap}" y1="${oy+uy*gap}" x2="${ex}" y2="${ey}" ${EXT}/>`; };
+  // horizontal dimension line with knockout label centered on it
+  const dimH = (x1,x2,y,label,value) => { const mx=(x1+x2)/2, text=`${label} ${value}`, tw=text.length*6.2+8;
+    return `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" ${DIM}/>
+      <rect x="${mx-tw/2}" y="${y-8}" width="${tw}" height="14" fill="${PAPER}"/>
+      <text x="${mx}" y="${y+3}" text-anchor="middle" ${TXT}>${text}</text>`; };
+  // vertical dimension line with knockout label centered on it (rotated text)
+  const dimV = (y1,y2,x,label,value) => { const my=(y1+y2)/2, text=`${label} ${value}`, tw=text.length*6.2+8;
+    return `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" ${DIM}/>
+      <rect x="${x-7}" y="${my-tw/2}" width="14" height="${tw}" fill="${PAPER}"/>
+      <text x="${x+4}" y="${my}" text-anchor="middle" ${TXT} transform="rotate(-90 ${x+4} ${my})">${text}</text>`; };
+
   let inner = "";
   if (side === "Top"){
+    // Plan view: U-shaped rail frame, open toward viewer, back edge against the wall.
+    // Zones top->bottom: wall line, C (wall gap), object, A (inner rail), B callout. E/D verticals flank the object.
     inner = `
-      <text x="${W/2}" y="14" text-anchor="middle" ${D} opacity=".6">Wall</text>
-      <path d="M40,26 H240 V26" ${S}/>
-      <path d="M65,40 H215 V120" ${S}/><path d="M65,40 V120" ${S}/>
-      <line x1="65" y1="30" x2="215" y2="30" stroke="var(--accent)" stroke-width="1.5"/>
-      <text x="140" y="24" text-anchor="middle" ${L}>C ${v('C')}</text>
-      <line x1="90" y1="45" x2="190" y2="45" stroke="var(--accent)" stroke-width="1.5"/>
-      <text x="140" y="58" text-anchor="middle" ${L}>A ${v('A')}</text>
-      <line x1="50" y1="40" x2="50" y2="120" stroke="var(--accent)" stroke-width="1.5"/>
-      <text x="20" y="82" ${L}>E ${v('E')}</text>
-      <line x1="230" y1="40" x2="230" y2="120" stroke="var(--accent)" stroke-width="1.5"/>
-      <text x="236" y="82" ${L}>D ${v('D')}</text>
-      <text x="140" y="135" text-anchor="middle" ${D} opacity=".6">B ${v('B')} (rail width)</text>`;
+      <line x1="30" y1="18" x2="290" y2="18" stroke="#c3c9d4" stroke-width="2" stroke-dasharray="2 4"/>
+      <text x="160" y="12" text-anchor="middle" ${TAG}>WALL</text>
+      ${ext(75,50,75,36)}${ext(245,50,245,36)}
+      ${dimH(75,245,32,'C',v('C'))}
+      <path d="M75,50 H245 V166 M75,50 V166" ${OUTLINE}/>
+      <line x1="108" y1="158" x2="212" y2="158" ${OUTLINE}/>
+      ${ext(75,50,42,50)}${ext(75,166,42,166)}
+      ${dimV(50,166,42,'E',v('E'))}
+      ${ext(245,50,278,50)}${ext(245,166,278,166)}
+      ${dimV(50,166,278,'D',v('D'))}
+      ${ext(108,158,108,184)}${ext(212,158,212,184)}
+      ${dimH(108,212,190,'A',v('A'))}
+      <text x="160" y="212" text-anchor="middle" ${TAG}>RAIL BAR B ${v('B')}</text>`;
   } else if (side === "Rear"){
     inner = `
-      <rect x="55" y="30" width="170" height="110" ${S}/>
-      <line x1="55" y1="20" x2="225" y2="20" stroke="var(--accent)" stroke-width="1.5"/>
-      <text x="140" y="15" text-anchor="middle" ${L}>A ${v('A')}</text>
-      <line x1="40" y1="30" x2="40" y2="140" stroke="var(--accent)" stroke-width="1.5"/>
-      <text x="10" y="88" ${L}>B ${v('B')}</text>`;
+      <rect x="60" y="56" width="200" height="128" ${OUTLINE}/>
+      <line x1="72" y1="68" x2="248" y2="68" stroke="#c3c9d4" stroke-width="1.2"/>
+      <line x1="72" y1="108" x2="248" y2="108" stroke="#c3c9d4" stroke-width="1.2"/>
+      <line x1="72" y1="148" x2="248" y2="148" stroke="#c3c9d4" stroke-width="1.2"/>
+      ${ext(60,56,60,36)}${ext(260,56,260,36)}
+      ${dimH(60,260,30,'A',v('A'))}
+      ${ext(60,56,36,56)}${ext(60,184,36,184)}
+      ${dimV(56,184,36,'B',v('B'))}`;
   } else { // Left / Right
+    // Zones: A (outer, top-most), C (inner, just above object), object with 2 dividers, D (below object), B (right, vertical)
     inner = `
-      <rect x="45" y="35" width="190" height="95" ${S}/>
-      <line x1="115" y1="35" x2="115" y2="130" ${S}/><line x1="165" y1="35" x2="165" y2="130" ${S}/>
-      <line x1="45" y1="35" x2="115" y2="35" stroke="var(--accent)" stroke-width="1.5"/>
-      <text x="80" y="28" text-anchor="middle" ${L} font-size="10">C ${v('C')}</text>
-      <line x1="115" y1="90" x2="165" y2="90" stroke="var(--accent)" stroke-width="1.5"/>
-      <text x="140" y="86" text-anchor="middle" ${L} font-size="10">D ${v('D')}</text>
-      <line x1="45" y1="22" x2="235" y2="22" stroke="var(--accent)" stroke-width="1.5"/>
-      <text x="140" y="17" text-anchor="middle" ${L}>A ${v('A')}</text>
-      <line x1="245" y1="35" x2="245" y2="130" stroke="var(--accent)" stroke-width="1.5"/>
-      <text x="250" y="86" ${L}>B ${v('B')}</text>`;
+      ${ext(55,66,55,26)}${ext(275,66,275,26)}
+      ${dimH(55,275,22,'A',v('A'))}
+      ${ext(55,66,55,50)}${ext(140,66,140,50)}
+      ${dimH(55,140,46,'C',v('C'))}
+      <rect x="55" y="66" width="220" height="100" ${OUTLINE}/>
+      <line x1="140" y1="66" x2="140" y2="166" ${OUTLINE}/>
+      <line x1="195" y1="66" x2="195" y2="166" ${OUTLINE}/>
+      ${ext(140,166,140,182)}${ext(195,166,195,182)}
+      ${dimH(140,195,188,'D',v('D'))}
+      ${ext(275,66,296,66)}${ext(275,166,296,166)}
+      ${dimV(66,166,296,'B',v('B'))}`;
   }
-  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;background:var(--bg);border-radius:8px">${inner}</svg>`;
+  return `
+  <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;background:${PAPER};border:1px solid var(--border);border-radius:8px">
+    <defs>
+      <pattern id="cadGrid" width="16" height="16" patternUnits="userSpaceOnUse">
+        <path d="M16,0 H0 V16" fill="none" stroke="#e1e6ee" stroke-width="1"/>
+      </pattern>
+      <marker id="dimArrowStart" markerWidth="8" markerHeight="8" refX="0" refY="2" orient="auto"><path d="M0,2 L7,0 L7,4 Z" fill="#2a3142"/></marker>
+      <marker id="dimArrowEnd" markerWidth="8" markerHeight="8" refX="7" refY="2" orient="auto"><path d="M7,2 L0,0 L0,4 Z" fill="#2a3142"/></marker>
+    </defs>
+    <rect x="0" y="0" width="${W}" height="${H}" fill="url(#cadGrid)"/>
+    <rect x="1" y="1" width="${W-2}" height="${H-2}" fill="none" stroke="#c3c9d4" stroke-width="1"/>
+    ${inner}
+    <text x="${W-8}" y="${H-8}" text-anchor="end" ${TAG} opacity=".6">NTS — as printed in report</text>
+  </svg>`;
 }
 
 function photoGrid(s, limit){
