@@ -13,6 +13,7 @@ class Settings(BaseSettings):
 
     mongodb_uri: str = ""
     mongodb_db: str = "elevator_rf_survey"
+    mongodb_tls: bool = True  # Atlas requires TLS; local/dev Mongo (docker, no srv) usually doesn't
 
     jwt_secret: str = ""
     jwt_access_ttl_minutes: int = 15

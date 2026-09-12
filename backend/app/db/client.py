@@ -12,7 +12,7 @@ def get_client() -> AsyncIOMotorClient:
     global _client
     if _client is None:
         settings = get_settings()
-        _client = AsyncIOMotorClient(settings.mongodb_uri, tls=True)
+        _client = AsyncIOMotorClient(settings.mongodb_uri, tls=settings.mongodb_tls)
     return _client
 
 
@@ -47,6 +47,7 @@ async def ensure_indexes() -> None:
     await db.surveys.create_index([("status", 1), ("updated_at", -1)])
     await db.surveys.create_index([("created_by.user_id", 1), ("updated_at", -1)])
     await db.surveys.create_index("rf.summary.overall.verdict")
+    await db.surveys.create_index("integration.connector.type")
     await db.surveys.create_index(
         [("survey_number", "text"), ("header.site_name_snapshot", "text"),
          ("header.client_snapshot", "text")],

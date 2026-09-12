@@ -137,9 +137,30 @@ class PinoutEntry(BaseModel):
     color: str = ""
 
 
+ConnectorType = Literal[
+    "JST-XH", "JST-PH", "JST-SM", "Molex Mini-Fit", "Molex KK", "Dupont",
+    "Phoenix Contact", "Wago", "Other",
+]
+ConnectorGender = Literal["male", "female", "unknown"]
+
+
+class ConnectorInfo(BaseModel):
+    """Structured connector data, additive alongside Integration.connectors
+    (free text) -- never inferred from other fields; every value here is
+    either what the field engineer entered or None. `type` is a controlled
+    list plus "Other"; when "Other" is chosen, compatible_part_note is where
+    the exact observed value/part number goes (not re-derived elsewhere)."""
+    type: ConnectorType | None = None
+    positions: int | None = Field(default=None, gt=0, description="Pin/position count, e.g. 4")
+    pitch_mm: float | None = Field(default=None, gt=0, description="Contact pitch in millimetres, e.g. 2.5")
+    gender: ConnectorGender | None = None
+    compatible_part_note: str | None = None
+
+
 class Integration(BaseModel):
     button_module_sku: str = ""
-    connectors: str = ""
+    connectors: str = ""  # free text -- kept as-is for backward compatibility, never overwritten by `connector`
+    connector: ConnectorInfo | None = None
     pinout: list[PinoutEntry] = Field(default_factory=list)
 
 

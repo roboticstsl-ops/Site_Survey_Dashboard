@@ -1,9 +1,10 @@
-"""Phase 0/1 skeleton — health endpoints + CORS only. Auth, CRUD, sync and
-dashboard routers land in Phase 2/3 (BUILD_SPEC section 16) once there's a
-real Atlas connection and secrets to test against."""
+"""Phase 2: health endpoints + the read API the dashboard talks to (summary,
+survey list/detail, reports, file serving, login). Write/sync endpoints are
+still Phase 3 (BUILD_SPEC section 16)."""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api import auth, files, surveys
 from app.core.config import get_settings
 from app.db.client import ping
 
@@ -18,6 +19,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth.router)
+app.include_router(surveys.router)
+app.include_router(files.router)
 
 
 @app.get("/healthz")
