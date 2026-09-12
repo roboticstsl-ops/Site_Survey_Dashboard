@@ -731,11 +731,59 @@ function renderDetail() {
   else if (activeTab === "RF Results") body.innerHTML = rfTab(s);
   else if (activeTab === "Railing Measurements") renderRailingTab(body, s);
   else if (activeTab === "Pinout & Integration") body.innerHTML = integrationTab(s);
-  else if (activeTab === "Photos") body.innerHTML = photosTab(s);
+  else if (activeTab === "Photos") body.innerHTML = folderGrid(s);
   else renderDocumentsTab(body, s);
 
-  body.querySelectorAll("[data-open-photo]").forEach(el =>
-    el.addEventListener("click", () => openImageViewer({ photos: (s.photos || []) }, +el.dataset.openPhoto)));
+  body.querySelectorAll("[data-full-rf]").forEach(el => el.addEventListener("click", () => openRfModal(s)));
+  body.querySelectorAll("[data-open-folder]").forEach(el =>
+    el.addEventListener("click", () => openPhotoFolder(s, +el.dataset.openFolder)));
+}
+
+// Group photos into their source folders (Exterior Photos / Panel / Elevator
+// Roof Mounting Point, etc. -- matches the real folder names the importer used).
+// Photos without a `group` (older imports) each become their own single-photo
+// folder rather than silently disappearing.
+function photoFolders(s) {
+  const photos = s.photos || [];
+  const order = [], byGroup = {};
+  photos.forEach(p => {
+    const key = p.group || p.description || p.filename || "Photos";
+    if (!byGroup[key]) { byGroup[key] = []; order.push(key); }
+    byGroup[key].push(p);
+  });
+  return order.map(key => ({ name: key, photos: byGroup[key] }));
+}
+
+function folderGrid(s) {
+  const folders = photoFolders(s);
+  if (!folders.length) return `<p style="color:var(--muted);font-size:13px">No photos recorded for this survey.</p>`;
+  return `<div class="photo-grid">
+    ${folders.map((f, i) => {
+      const cover = f.photos[0];
+      return `<div class="photo" data-open-folder="${i}">
+        <div class="thumb" style="position:relative">
+          ${cover.url ? `<img src="${cover.url}" alt="${f.name}" loading="lazy">` : f.name}
+          ${f.photos.length > 1 ? `<span style="position:absolute;bottom:4px;right:4px;background:rgba(17,24,39,.75);color:#fff;font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:999px">${f.photos.length}</span>` : ""}
+        </div>
+        <div class="cap">${f.name}</div>
+      </div>`;
+    }).join("")}
+  </div>`;
+}
+
+function openPhotoFolder(s, folderIndex) {
+  const folder = photoFolders(s)[folderIndex];
+  document.getElementById("modalTitle").textContent = folder.name;
+  document.getElementById("modalBody").innerHTML = `<div class="photo-grid">
+    ${folder.photos.map((p, i) => `
+      <div class="photo" data-open-photo="${i}">
+        <div class="thumb">${p.url ? `<img src="${p.url}" alt="${p.description || p.filename}" loading="lazy">` : (p.description || p.filename || "Photo")}</div>
+        <div class="cap">${p.description || p.filename || "Photo"}</div>
+      </div>`).join("")}
+  </div>`;
+  document.getElementById("modalOverlay").hidden = false;
+  document.getElementById("modalBody").querySelectorAll("[data-open-photo]").forEach(el =>
+    el.addEventListener("click", () => openImageViewer(folder, +el.dataset.openPhoto)));
 }
 
 function summaryTab(s) {
@@ -806,7 +854,38 @@ function rfTab(s) {
         <td>${r.et.rsrp ?? "—"}</td><td>${r.et.sinr ?? "—"}</td>
       </tr>`).join("")}</tbody>
     </table>`;
-  }).join("");
+  }).join("") + `<button class="ghost" style="margin-top:4px" data-full-rf>View Full RF (all columns) &rsaquo;</button>`;
+}
+
+function fullRfTable(s) {
+  const sections = Object.entries((s.rf && s.rf.sections) || {});
+  const c = v => v === undefined || v === null ? "—" : v;
+  return sections.map(([key, section]) => {
+    const rows = parseRfSection(section);
+    return `<h4 style="font-size:13px;margin:0 0 8px">${section.name || key}</h4>
+    <div style="overflow-x:auto"><table class="mini" style="margin-bottom:18px">
+      <thead><tr>
+        <th>Location</th>
+        <th colspan="6" style="text-align:center;border-left:2px solid var(--border)">Carrier #1 — DU</th>
+        <th colspan="6" style="text-align:center;border-left:2px solid var(--border)">Carrier #2 — Etisalat</th>
+      </tr>
+      <tr><th></th>
+        <th style="border-left:2px solid var(--border)">RSRP</th><th>RSRQ</th><th>SINR</th><th>Band</th><th>DL</th><th>UL</th>
+        <th style="border-left:2px solid var(--border)">RSRP</th><th>RSRQ</th><th>SINR</th><th>Band</th><th>DL</th><th>UL</th>
+      </tr></thead>
+      <tbody>${rows.map(r => `<tr>
+        <td>${r.loc || r.row}</td>
+        <td style="border-left:2px solid var(--border)">${c(r.du.rsrp)}</td><td>${c(r.du.rsrq)}</td><td>${c(r.du.sinr)}</td><td>${c(r.du.band)}</td><td>${c(r.du.dl)}</td><td>${c(r.du.ul)}</td>
+        <td style="border-left:2px solid var(--border)">${c(r.et.rsrp)}</td><td>${c(r.et.rsrq)}</td><td>${c(r.et.sinr)}</td><td>${c(r.et.band)}</td><td>${c(r.et.dl)}</td><td>${c(r.et.ul)}</td>
+      </tr>`).join("")}</tbody>
+    </table></div>`;
+  }).join("") + `<p style="color:var(--muted);font-size:12px">Every row transcribed verbatim from the report's RF sections — DL/UL in Mbps.</p>`;
+}
+
+function openRfModal(s) {
+  document.getElementById("modalTitle").textContent = `Full RF Measurements — ${s.header && s.header.site_name_snapshot || ""}`;
+  document.getElementById("modalBody").innerHTML = fullRfTable(s);
+  document.getElementById("modalOverlay").hidden = false;
 }
 
 function renderRailingTab(body, s) {
@@ -864,18 +943,6 @@ function integrationTab(s) {
         <tbody>${integ.pinout.map(p => `<tr><td>${p.pin}</td><td>${p.use || "—"}</td><td>${p.color || "—"}</td></tr>`).join("")}</tbody>
       </table>` : `<p style="color:var(--muted);font-size:13px">No pinout recorded.</p>`}
     </div>
-  </div>`;
-}
-
-function photosTab(s) {
-  const photos = s.photos || [];
-  if (!photos.length) return `<p style="color:var(--muted);font-size:13px">No photos recorded for this survey.</p>`;
-  return `<div class="photo-grid">
-    ${photos.map((p, i) => `
-      <div class="photo" data-open-photo="${i}">
-        <div class="thumb">${p.url ? `<img src="${p.url}" alt="${p.description || p.filename}" loading="lazy">` : (p.description || p.filename || "Photo")}</div>
-        <div class="cap">${p.description || p.filename || "Photo"}</div>
-      </div>`).join("")}
   </div>`;
 }
 

@@ -108,6 +108,7 @@ async def import_report(*, survey_json_path: str, folder_path: str, photo_dirs: 
                 "photo_id": f"{_slugify(subfolder_name)}-{i}",
                 "description": f"{label_prefix} {i}",
                 "filename": path.name,
+                "group": label_prefix,
                 "captured_at": now,
                 "sort_order": sort_order,
             })

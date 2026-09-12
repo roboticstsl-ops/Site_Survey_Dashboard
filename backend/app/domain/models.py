@@ -168,6 +168,7 @@ class PhotoRef(BaseModel):
     photo_id: str
     description: str = ""
     filename: str = ""
+    group: str = ""  # source folder (e.g. "Exterior Photos", "Panel") -- dashboard groups by this
     captured_at: datetime | None = None
     sort_order: int = 0
 
