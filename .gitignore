@@ -17,4 +17,8 @@ frontend/dist/
 mobile/node_modules/
 mobile/android/
 
+# real client report folders dropped for import -- PDFs/photos, not source
+data/elevatorData/*
+!data/elevatorData/README.md
+
 .DS_Store
