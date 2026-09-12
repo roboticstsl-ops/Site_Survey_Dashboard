@@ -1,0 +1,296 @@
+{
+  "survey_number": "EBP2-2026-0331-LR1",
+  "status": "reviewed",
+  "site_id": "emaar-boulevard-plaza-2",
+  "elevator_id": "LR-1",
+  "header": {
+    "doc_ref": "",
+    "prepared_by": "Michael Bedder, Ravi Kanth, Chethan Kumar",
+    "date": "2026-03-31",
+    "version": "2.0",
+    "project": "Site inspection",
+    "site_name_snapshot": "Emaar Boulevard Plaza 2 \u2013 L5-L15",
+    "client_snapshot": "TII",
+    "address_snapshot": "Emaar Boulevard Plaza 2, Downtown, Dubai",
+    "maps_link_snapshot": "https://maps.app.goo.gl/DF3ZsByFUnsg7L7bA"
+  },
+  "elevator": {
+    "oem": "OTIS",
+    "model": "OGP 300VFE",
+    "elev_id": "LR-1",
+    "maintenance_company": "EMRILL",
+    "plug_points": "Single UK socket available but needs an additional socket installed"
+  },
+  "assessment": {
+    "checklist": {},
+    "note": "Scope note: floors 2, 3, 4 not reachable from this elevator (walled off, not in use), so not surveyed. Control box mounting point: back railing (square, 30mm x 30mm). RFID reader to be installed on the back side of the door (520mm depth). ~10m of cabling needed for floor call buttons. Report's own checked box states Overall Feasibility 'Acceptable' -- computed averages here (RSRP -85.4/-88.0, SINR 19.4/17.5) agree."
+  },
+  "railings": {
+    "top": {
+      "dimensions_mm": {
+        "A": 1500,
+        "B": 1800,
+        "C": 1800,
+        "D": 30,
+        "E": 30,
+        "G": 430,
+        "H": 520,
+        "I": 450
+      },
+      "drawing": []
+    },
+    "rear": {
+      "dimensions_mm": {
+        "A": 1500,
+        "B": 450,
+        "C": 520,
+        "D": 30
+      },
+      "drawing": []
+    },
+    "left": {
+      "dimensions_mm": {
+        "A": 1800,
+        "B": 1100,
+        "C": 450,
+        "D": 30,
+        "F": 30
+      },
+      "drawing": []
+    },
+    "right": {
+      "dimensions_mm": {
+        "A": 1800,
+        "B": 1100,
+        "C": 450,
+        "D": 30,
+        "F": 30
+      },
+      "drawing": []
+    },
+    "note": "Control box mounted on back railing (30mm x 30mm square section)."
+  },
+  "rf": {
+    "floor_count": 15,
+    "active_carrier": "et",
+    "sections": {
+      "rf1": {
+        "name": "Charging area + Building lobby",
+        "cells": {
+          "0|loc": "d-bot charging point",
+          "0|du.rsrp": -81,
+          "0|du.rsrq": -5,
+          "0|du.sinr": 30.0,
+          "0|du.band": "B3",
+          "0|du.dl": 858,
+          "0|du.ul": 62.2,
+          "0|et.rsrp": -79,
+          "0|et.rsrq": -6,
+          "0|et.sinr": 18.0,
+          "0|et.band": "B3",
+          "0|et.dl": 435,
+          "0|et.ul": 31.9,
+          "1|loc": "Main lobby / reception",
+          "1|du.rsrp": -72,
+          "1|du.rsrq": -3,
+          "1|du.sinr": 30.0,
+          "1|du.band": "B3",
+          "1|du.dl": 494,
+          "1|du.ul": 36,
+          "1|et.rsrp": -98,
+          "1|et.rsrq": -9,
+          "1|et.sinr": 12.0,
+          "1|et.band": "B3",
+          "1|et.dl": 493,
+          "1|et.ul": 35.3,
+          "2|loc": "Lift lobby GF",
+          "2|du.rsrp": -83,
+          "2|du.rsrq": -6,
+          "2|du.sinr": 18.0,
+          "2|du.band": "B3",
+          "2|du.dl": 683,
+          "2|du.ul": 44.2,
+          "2|et.rsrp": -84,
+          "2|et.rsrq": -5,
+          "2|et.sinr": 27.0,
+          "2|et.band": "B3",
+          "2|et.dl": 428,
+          "2|et.ul": 32.9
+        }
+      },
+      "rf2": {
+        "name": "On top of elevator cabin",
+        "cells": {
+          "0|loc": "1st Floor",
+          "0|du.rsrp": -78,
+          "0|du.rsrq": -5,
+          "0|du.sinr": 25,
+          "0|du.band": "B3",
+          "0|du.dl": 143,
+          "0|du.ul": 54.8,
+          "0|et.rsrp": -93,
+          "0|et.rsrq": -20,
+          "0|et.sinr": -11,
+          "0|et.band": "B8",
+          "0|et.dl": 332,
+          "0|et.ul": 16,
+          "1|loc": "5th Floor",
+          "1|du.rsrp": -86,
+          "1|du.rsrq": -5,
+          "1|du.sinr": 11,
+          "1|du.band": "B3",
+          "1|du.dl": 102,
+          "1|du.ul": 53.5,
+          "1|et.rsrp": -78,
+          "1|et.rsrq": -9,
+          "1|et.sinr": 22,
+          "1|et.band": "B8",
+          "1|et.dl": 27,
+          "1|et.ul": 18.1,
+          "2|loc": "6th Floor",
+          "2|du.rsrp": -84,
+          "2|du.rsrq": -4,
+          "2|du.sinr": 12,
+          "2|du.band": "B3",
+          "2|du.dl": 93.3,
+          "2|du.ul": 34.7,
+          "2|et.rsrp": -69,
+          "2|et.rsrq": -5,
+          "2|et.sinr": 30,
+          "2|et.band": "B8",
+          "2|et.dl": 31.7,
+          "2|et.ul": 27.3,
+          "3|loc": "7th Floor",
+          "3|du.rsrp": -75,
+          "3|du.rsrq": -4,
+          "3|du.sinr": 27,
+          "3|du.band": "B3",
+          "3|du.dl": 121,
+          "3|du.ul": 21.2,
+          "3|et.rsrp": -67,
+          "3|et.rsrq": -5,
+          "3|et.sinr": 30,
+          "3|et.band": "B8",
+          "3|et.dl": 28.5,
+          "3|et.ul": 14.4
+        }
+      },
+      "rf3": {
+        "name": "Inside elevator cabin",
+        "cells": {
+          "0|loc": "1st Floor",
+          "0|du.rsrp": -90,
+          "0|du.rsrq": -4,
+          "0|du.sinr": 23,
+          "0|du.band": "B3",
+          "0|du.dl": 49.8,
+          "0|du.ul": 11.3,
+          "0|et.rsrp": -126,
+          "0|et.rsrq": -14,
+          "0|et.sinr": -2.0,
+          "0|et.band": "B8",
+          "0|et.dl": 13.8,
+          "0|et.ul": 3.19,
+          "1|loc": "5th Floor",
+          "1|du.rsrp": -102,
+          "1|du.rsrq": -8,
+          "1|du.sinr": 3.0,
+          "1|du.band": "B3",
+          "1|du.dl": 15.5,
+          "1|du.ul": 1.94,
+          "1|et.rsrp": -107,
+          "1|et.rsrq": -7,
+          "1|et.sinr": 11,
+          "1|et.band": "B8",
+          "1|et.dl": 14.7,
+          "1|et.ul": 1.43,
+          "2|loc": "6th Floor",
+          "2|du.rsrp": -99,
+          "2|du.rsrq": -4,
+          "2|du.sinr": 9.0,
+          "2|du.band": "B3",
+          "2|du.dl": 87.1,
+          "2|du.ul": 4.69,
+          "2|et.rsrp": -90,
+          "2|et.rsrq": -9,
+          "2|et.sinr": 25,
+          "2|et.band": "B8",
+          "2|et.dl": 31.1,
+          "2|et.ul": 8.02,
+          "3|loc": "7th Floor",
+          "3|du.rsrp": -89,
+          "3|du.rsrq": -5,
+          "3|du.sinr": 25,
+          "3|du.band": "B3",
+          "3|du.dl": 106,
+          "3|du.ul": 34.7,
+          "3|et.rsrp": -77,
+          "3|et.rsrq": -5,
+          "3|et.sinr": 30,
+          "3|et.band": "B8",
+          "3|et.dl": 27.2,
+          "3|et.ul": 26.7
+        }
+      }
+    },
+    "summary": {
+      "computed_at": null,
+      "overall": {
+        "averages": {
+          "rsrp": -86.7
+        },
+        "verdict": "Acceptable"
+      },
+      "by_carrier": {
+        "du": {
+          "averages": {
+            "rsrp": -85.4,
+            "sinr": 19.4
+          },
+          "verdict": "Good"
+        },
+        "et": {
+          "averages": {
+            "rsrp": -88.0,
+            "sinr": 17.5
+          },
+          "verdict": "Good"
+        }
+      },
+      "recommended_operator": "et"
+    },
+    "feasibility": {
+      "value": "Acceptable",
+      "source": "report",
+      "override_note": ""
+    }
+  },
+  "integration": {
+    "button_module_sku": "JL-2",
+    "connectors": "JST 2.54 Pitch 4 Pin",
+    "connector": {
+      "type": "Other",
+      "positions": 4,
+      "pitch_mm": 2.54,
+      "gender": null,
+      "compatible_part_note": "JST 2.54mm pitch, 4-position -- exact series not specified in the report; only 3 of 4 pins had visually identifiable wiring (Brown/Red/Blue), pin usage could not be determined on visual inspection."
+    },
+    "pinout": [
+      {
+        "pin": 1,
+        "use": "",
+        "color": "Brown"
+      },
+      {
+        "pin": 2,
+        "use": "",
+        "color": "Red"
+      },
+      {
+        "pin": 3,
+        "use": "",
+        "color": "Blue"
+      }
+    ]
+  }
+}
